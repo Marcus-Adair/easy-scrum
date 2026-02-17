@@ -1,42 +1,63 @@
-# sv
+# Easy Scrum
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+![SvelteKit](https://img.shields.io/badge/SvelteKit-FF3E00?style=for-the-badge&logo=svelte&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
+![Drizzle](https://img.shields.io/badge/Drizzle-C5F74F?style=for-the-badge&logo=drizzle&logoColor=black)
 
-## Creating a project
+A lightweight scrum board for organizing topics, notes, and comments. Built for simplicity.
 
-If you're seeing this, you've probably already done this step. Congrats!
+## Overview
 
-```sh
-# create a new project
-npx sv create my-app
+Create scrum sessions, add topics with custom colors, post notes with categories, share with others, and collaborate with comments. No account required - just create a session and start organizing. (sign-in coming soon...)
+
+## Quick Setup
+
+### Prerequisites
+
+- Node.js 18+
+- PostgreSQL database
+
+### Install
+
+```bash
+npm install
 ```
 
-To recreate this project with the same configuration:
+### Configure
 
-```sh
-# recreate this project
-npx sv create --template minimal --types ts --add prettier eslint tailwindcss="plugins:none" drizzle="database:postgresql+postgresql:postgres.js+docker:no" --install npm easy-scrum
+Create a `.env` file:
+
+```env
+DATABASE_URL=postgres://user:password@localhost:5432/easy_scrum
 ```
 
-## Developing
+### Database
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+```bash
+# Push schema to database
+npm run db:push
 
-```sh
+# (Optional) Seed demo data
+npm run db:seed
+```
+
+### Run
+
+```bash
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
 ```
 
-## Building
+Open [http://localhost:5173](http://localhost:5173)
 
-To create a production version of your app:
+## Scripts
 
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+| Command             | Description         |
+| ------------------- | ------------------- |
+| `npm run dev`       | Start dev server    |
+| `npm run build`     | Production build    |
+| `npm run db:push`   | Push schema to DB   |
+| `npm run db:seed`   | Seed demo data      |
+| `npm run db:clear`  | Wipe all data       |
+| `npm run db:studio` | Open Drizzle Studio |
