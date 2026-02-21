@@ -50,3 +50,17 @@ export const deleteTopicById = command(
       await deleteTopic(input.id);
     }
 );
+
+export const shiftTopicRowIndices = command(
+    z.object({
+      updates: z.array(z.object({
+        id: z.string(),
+        rowIdx: z.number(),
+      })),
+    }),
+    async (input) => {
+      await Promise.all(
+        input.updates.map(({ id, rowIdx }) => updateTopic(id, { rowIdx }))
+      );
+    }
+);

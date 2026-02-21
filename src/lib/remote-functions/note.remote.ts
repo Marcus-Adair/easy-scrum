@@ -31,6 +31,16 @@ export const updateNoteHeader = command(
     }
 );
 
+export const updateNoteContent = command(
+    z.object({
+      id: z.string(),
+      notes: z.string(),
+    }),
+    async (input) => {
+      await updateNote(input.id, { notes: input.notes });
+    }
+);
+
 export const updateNoteCategory = command(
     z.object({
       id: z.string(),
@@ -47,5 +57,30 @@ export const deleteNoteById = command(
     }),
     async (input) => {
       await deleteNote(input.id);
+    }
+);
+
+export const shiftNoteColIndices = command(
+    z.object({
+      updates: z.array(z.object({
+        id: z.string(),
+        colIdx: z.number(),
+      })),
+    }),
+    async (input) => {
+      await Promise.all(
+        input.updates.map(({ id, colIdx }) => updateNote(id, { colIdx }))
+      );
+    }
+);
+
+export const moveNoteToTopic = command(
+    z.object({
+      id: z.string(),
+      topicId: z.string(),
+      colIdx: z.number(),
+    }),
+    async (input) => {
+      await updateNote(input.id, { topicId: input.topicId, colIdx: input.colIdx });
     }
 );

@@ -215,11 +215,11 @@
                         <DropdownMenu.Group>
                             {#each scrumSession.noteCategories as noteCategory}
                                 <DropdownMenu.Sub>
-                                    <DropdownMenu.SubTrigger class={hoverColorBgMap[noteCategory.color]}>{noteCategory.categoryName}</DropdownMenu.SubTrigger>
+                                    <DropdownMenu.SubTrigger class={[hoverColorBgMap[noteCategory.color], "data-highlighted:text-pastel-foreground data-[state=open]:text-pastel-foreground"]}>{noteCategory.categoryName}</DropdownMenu.SubTrigger>
                                     <DropdownMenu.SubContent>
-                                        <DropdownMenu.Item class={hoverColorBgMap[noteCategory.color]} title="Edit Name" onclick={() => openEditCategoryName(noteCategory)}>Edit Name<Pencil/></DropdownMenu.Item>
-                                        <DropdownMenu.Item class={hoverColorBgMap[noteCategory.color]} title="Edit Color" onclick={() => openEditCategoryColor(noteCategory)}>Edit Color<Palette/></DropdownMenu.Item>
-                                        <DropdownMenu.Item class={hoverColorBgMap[noteCategory.color]} title="Delete" onclick={() => openDeleteCategory(noteCategory)}>Delete<Trash2 class="text-destructive"/></DropdownMenu.Item>
+                                        <DropdownMenu.Item class={[hoverColorBgMap[noteCategory.color], "data-highlighted:text-pastel-foreground"]} title="Edit Name" onclick={() => openEditCategoryName(noteCategory)}>Edit Name<Pencil/></DropdownMenu.Item>
+                                        <DropdownMenu.Item class={[hoverColorBgMap[noteCategory.color], "data-highlighted:text-pastel-foreground"]} title="Edit Color" onclick={() => openEditCategoryColor(noteCategory)}>Edit Color<Palette/></DropdownMenu.Item>
+                                        <DropdownMenu.Item class={[hoverColorBgMap[noteCategory.color], "data-highlighted:text-pastel-foreground"]} title="Delete" onclick={() => openDeleteCategory(noteCategory)}>Delete<Trash2 class="text-destructive"/></DropdownMenu.Item>
                                     </DropdownMenu.SubContent>
                                 </DropdownMenu.Sub>
                             {/each}
@@ -284,7 +284,7 @@
         {#if scrumSession.topics.length}
             <div class="flex flex-wrap justify-center gap-3 p-5 max-w-6xl">
                 {#each scrumSession.topics.sort((a, b) => a.rowIdx - b.rowIdx) as topic}
-                    <Topic {topic} topicsLength={scrumSession.topics.length} noteCategories={scrumSession.noteCategories}/>
+                    <Topic {topic} allTopics={scrumSession.topics} noteCategories={scrumSession.noteCategories}/>
                 {/each}
             </div>
         {:else}
