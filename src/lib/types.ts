@@ -1,4 +1,4 @@
-export type ColorOption = "pink" | "yellow" | "blue" | "orange" | "salmon"
+export type ColorOption = "pink" | "yellow" | "blue" | "orange" | "salmon" | "red" | "green" | "white" | "purple"
   
 export interface User {
     id: string;

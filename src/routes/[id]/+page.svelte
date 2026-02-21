@@ -19,6 +19,7 @@
 	import TopicColorSwitches from '$lib/components/TopicColorSwitches.svelte';
 	import NoteCategorySwitches from '$lib/components/NoteCategorySwitches.svelte';
 	import { AlertDialog, AlertDialogContent, AlertDialogFooter, AlertDialogTitle } from '$lib/components/ui/alert-dialog';
+	import { hoverColorBgMap } from '$lib/consts';
 
     let { data }: PageProps = $props();
     let scrumSession = $derived(data.session);
@@ -214,11 +215,11 @@
                         <DropdownMenu.Group>
                             {#each scrumSession.noteCategories as noteCategory}
                                 <DropdownMenu.Sub>
-                                    <DropdownMenu.SubTrigger>{noteCategory.categoryName}</DropdownMenu.SubTrigger>
+                                    <DropdownMenu.SubTrigger class={hoverColorBgMap[noteCategory.color]}>{noteCategory.categoryName}</DropdownMenu.SubTrigger>
                                     <DropdownMenu.SubContent>
-                                        <DropdownMenu.Item title="Edit Name" onclick={() => openEditCategoryName(noteCategory)}>Edit Name<Pencil/></DropdownMenu.Item>
-                                        <DropdownMenu.Item title="Edit Color" onclick={() => openEditCategoryColor(noteCategory)}>Edit Color<Palette/></DropdownMenu.Item>
-                                        <DropdownMenu.Item title="Delete" onclick={() => openDeleteCategory(noteCategory)}>Delete<Trash2 class="text-destructive"/></DropdownMenu.Item>
+                                        <DropdownMenu.Item class={hoverColorBgMap[noteCategory.color]} title="Edit Name" onclick={() => openEditCategoryName(noteCategory)}>Edit Name<Pencil/></DropdownMenu.Item>
+                                        <DropdownMenu.Item class={hoverColorBgMap[noteCategory.color]} title="Edit Color" onclick={() => openEditCategoryColor(noteCategory)}>Edit Color<Palette/></DropdownMenu.Item>
+                                        <DropdownMenu.Item class={hoverColorBgMap[noteCategory.color]} title="Delete" onclick={() => openDeleteCategory(noteCategory)}>Delete<Trash2 class="text-destructive"/></DropdownMenu.Item>
                                     </DropdownMenu.SubContent>
                                 </DropdownMenu.Sub>
                             {/each}
@@ -280,7 +281,22 @@
             </div>
         </div>
 
-        <div class="flex justify-center gap-3 p-5">
+        {#if scrumSession.topics.length}
+            <div class="flex flex-wrap justify-center gap-3 p-5 max-w-6xl">
+                {#each scrumSession.topics.sort((a, b) => a.rowIdx - b.rowIdx) as topic}
+                    <Topic {topic} topicsLength={scrumSession.topics.length} noteCategories={scrumSession.noteCategories}/>
+                {/each}
+            </div>
+        {:else}
+            <div class="flex justify-center pb-8 pt-4">
+                <div class="flex flex-col items-center gap-0 px-4">
+                    <span class="text-center">No Topics</span>
+                    <span class="text-center text-sm text-muted-foreground">Create a Topic and start adding Notes to it</span>
+                </div>
+            </div>
+        {/if}
+
+        <!-- <div class="grid grid-cols-3 justify-center gap-3 p-5">
             {#if scrumSession.topics.length}
                 {#each scrumSession.topics.sort((a, b) => a.rowIdx - b.rowIdx) as topic}
                     <Topic {topic} topicsLength={scrumSession.topics.length} noteCategories={scrumSession.noteCategories}/>
@@ -292,7 +308,7 @@
                     <span class="text-center text-sm text-muted-foreground">Create a topic to start adding notes to it</span>
                 </div>
             {/if}
-        </div>
+        </div> -->
     </div>
 </div>
 
