@@ -136,7 +136,7 @@
 
 <!--     style={`background-color: ${topic.color},`}              -->
 
-<div class={["flex flex-col rounded-md border border-border min-w-[360px] max-w-[360px]", colorBgMap[topic.color]]}>
+<div class={["flex flex-col rounded-md border border-border min-w-[360px] max-w-[360px] min-h-[250px]", colorBgMap[topic.color]]}>
     <div
         class="flex items-center justify-between px-1 py-1"
         onmouseenter={() => isHoveringTitle = true}
@@ -260,19 +260,7 @@
                     />
                 </div>
 
-                <!-- <div class="flex flex-col gap-2">
-                    <Label for="note-category">Note Category:</Label>
-                    <div class="flex gap-4 flex-wrap" id="note-category">
-                        {#each noteCategories as noteCategory}
-                            <div class="flex gap-2">
-                                <Label>{upperCaseFirstLetter(noteCategory.categoryName)}:</Label>
-                                <Switch id={`${noteCategory.categoryName}-switch`} class={switchColorBgMap[noteCategory.color]}/>
-                            </div>
-                        {/each}
-                    </div>
-                </div> -->
                 <NoteCategorySwitches {noteCategories} bind:noteCategoryId={newNoteCategoryId} dialogOpen={isNewNoteOpen}/>
-
 
                 <div class="flex flex-col gap-2">
                     <Label for="newNote">Note:</Label>
@@ -301,9 +289,9 @@
                 <Note {note} {noteCategories}/>
             {/each}
         {:else}
-            <div class="flex flex-col gap-0 px-4">
-                <span class="text-lg text-center">No Notes</span>
-                <span class="text-center text-sm text-muted-foreground">Create a note</span>
+            <div class="flex flex-col gap-1 px-4 mt-4">
+                <span class="text-center">No Notes</span>
+                <span class="text-center text-sm text-muted-foreground">Post a Note</span>
             </div>
         {/if}
     </div>

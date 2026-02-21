@@ -12,16 +12,23 @@
     }
     let { topicColor = $bindable(), dialogOpen}: Props = $props();
 
-    const defaultColorChosenState = {
-        pink: true,
-        yellow: false,
-        orange: false,
-        salmon: false,
-        blue: false
-    };
-    let colorChosenState = $state<Record<ColorOption, boolean>>(defaultColorChosenState);
+    function getColorState(selectedColor: ColorOption | undefined): Record<ColorOption, boolean> {
+        const color = selectedColor ?? "pink";
+        return {
+            pink: color === "pink",
+            yellow: color === "yellow",
+            orange: color === "orange",
+            salmon: color === "salmon",
+            blue: color === "blue",
+            red: color === "red",
+            green: color === "green",
+            white: color === "white",
+            purple: color === "purple"
+        };
+    }
+    let colorChosenState = $state<Record<ColorOption, boolean>>(getColorState(topicColor));
     $effect(() => {
-        if (dialogOpen) colorChosenState = defaultColorChosenState
+        if (dialogOpen) colorChosenState = getColorState(topicColor);
     })
     function setColorState(color: ColorOption) {
         if (!colorChosenState[color]) {

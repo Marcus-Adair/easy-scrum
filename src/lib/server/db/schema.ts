@@ -1,7 +1,7 @@
 import { pgTable, uuid, varchar, text, timestamp, integer, unique, pgEnum } from 'drizzle-orm/pg-core';
 import { defineRelations } from 'drizzle-orm';
 
-export const colorsEnum = pgEnum("colors", ["pink", "yellow", "blue", "orange", "salmon"]);
+export const colorsEnum = pgEnum("colors", ["pink", "yellow", "blue", "orange", "salmon", "red", "green", "white", "purple"]);
 
 // TODO: made things delete on cascade when i delete things
 

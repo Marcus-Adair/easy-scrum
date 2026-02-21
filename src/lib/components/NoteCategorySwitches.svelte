@@ -37,16 +37,20 @@
 <div class="flex flex-col gap-2">
     <Label for="note-category">Note Category:</Label>
     <div class="flex gap-4 flex-wrap" id="note-category">
-        {#each noteCategories as noteCategory}
-            <div class="flex gap-2">
-                <Label>{upperCaseFirstLetter(noteCategory.categoryName)}:</Label>
-                <Switch
-                    bind:checked={categoryChosenState[noteCategory.id]}
-                    id={`${noteCategory.id}-switch`}
-                    class={switchColorBgMap[noteCategory.color]}
-                    onclick={() => setCategoryState(noteCategory.id)}
-                />
-            </div>
-        {/each}
+        {#if noteCategories.length}
+            {#each noteCategories as noteCategory}
+                <div class="flex gap-2">
+                    <Label>{upperCaseFirstLetter(noteCategory.categoryName)}:</Label>
+                    <Switch
+                        bind:checked={categoryChosenState[noteCategory.id]}
+                        id={`${noteCategory.id}-switch`}
+                        class={switchColorBgMap[noteCategory.color]}
+                        onclick={() => setCategoryState(noteCategory.id)}
+                    />
+                </div>
+            {/each}
+        {:else}
+            <span class="text-sm text-muted-foreground">Create at least 1 Note Category first!</span>
+        {/if}
     </div>
 </div>

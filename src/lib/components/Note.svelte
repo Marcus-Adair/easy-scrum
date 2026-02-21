@@ -13,6 +13,7 @@
 	import { updateNoteHeader, deleteNoteById, updateNoteCategory } from "$lib/remote-functions/note.remote";
 	import { createNewComment } from "$lib/remote-functions/comment.remote";
 	import NoteCategorySwitches from "./NoteCategorySwitches.svelte";
+	import { ScrollArea } from "./ui/scroll-area";
 
     interface Props {
         note: Note;
@@ -227,14 +228,17 @@
                 </div>
                 
                 <div class="w-full h-px bg-border mb-1"></div>
-                {#each note.comments as comment}
-                    <div class="border border-border rounded-md flex flex-col p-1.5">
-                        <span>{comment.content}</span>
 
-                        <!-- TODO: add createdBy in comment ... refers to a user -->
-                        <span class="text-xs text-end text-muted-foreground">- Todo</span>
-                    </div>
-                {/each}
+                <ScrollArea class="space-y-2 max-h-64 w-full rounded-md border">
+                    {#each note.comments as comment}
+                        <div class="border border-border rounded-md flex flex-col p-1.5 m-1.5">
+                            <span>{comment.content}</span>
+
+                            <!-- TODO: add createdBy in comment ... refers to a user -->
+                            <span class="text-xs text-end text-muted-foreground">- Todo</span>
+                        </div>
+                    {/each}
+                </ScrollArea>
                 <div class="flex gap-2">
                     <Textarea bind:value={newCommentContent} placeholder="Add comment..."/>
                     <Button size="icon" variant="ghost" title="Add Comment" onclick={addComment} disabled={!newCommentContent.trim()}>
