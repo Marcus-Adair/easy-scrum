@@ -283,8 +283,10 @@
                                 </AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>
-                        <Button size="icon" variant="ghost" title="Shift Note Up" onclick={shiftNotesUp}><ChevronsUp class="size-4"/></Button>
-                        <Button size="icon" variant="ghost" title="Shift Note Down" onclick={shiftNotesDown}><ChevronsDown class="size-4"/></Button>
+                        {#if notesLength > 1}
+                            <Button size="icon" variant="ghost" title="Shift Note Up" onclick={shiftNotesUp}><ChevronsUp class="size-4"/></Button>
+                            <Button size="icon" variant="ghost" title="Shift Note Down" onclick={shiftNotesDown}><ChevronsDown class="size-4"/></Button>
+                        {/if}
                         <DropdownMenu.Root>
                             <DropdownMenu.Trigger class={[buttonVariants({ variant: "ghost", size: "icon" })]} title="Move to Topic">
                                 <NotebookPen class="size-4"/>

@@ -12,14 +12,25 @@
     }
     let { noteCategories, noteCategoryId = $bindable(), dialogOpen}: Props = $props();
 
-    const defaultCategoryState: Record<string, boolean> = {};
-    // svelte-ignore state_referenced_locally
-    for (const cat of noteCategories) {
-        defaultCategoryState[cat.id] = noteCategoryId === cat.id
+    function getDefaultCategoryState(): Record<string, boolean> {
+        const state: Record<string, boolean> = {};
+        // If no category selected and we have categories, select the first one
+        const selectedId = noteCategoryId ?? noteCategories[0]?.id;
+        for (const cat of noteCategories) {
+            state[cat.id] = cat.id === selectedId;
+        }
+        return state;
     }
-    let categoryChosenState = $state<Record<string, boolean>>(defaultCategoryState);
+
+    let categoryChosenState = $state<Record<string, boolean>>(getDefaultCategoryState());
     $effect(() => {
-        if (dialogOpen) categoryChosenState = defaultCategoryState
+        if (dialogOpen) {
+            // Auto-select first category if none selected
+            if (!noteCategoryId && noteCategories.length > 0) {
+                noteCategoryId = noteCategories[0].id;
+            }
+            categoryChosenState = getDefaultCategoryState();
+        }
     })
     function setCategoryState(id: string) {
         if (!categoryChosenState[id]) {

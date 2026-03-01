@@ -167,7 +167,7 @@
 
      
 <!-- colorBgMap[topic.color] -->
-<div class={["flex flex-col rounded-md border-2 min-w-[360px] max-w-[360px] min-h-[250px] text-card-foreground", "bg-card", colorBorderMap[topic.color]]}>
+<div class={["flex flex-col rounded-md border-2 min-w-[360px] max-w-[360px] min-h-[250px] text-card-foreground overflow-hidden", "bg-card", colorBorderMap[topic.color]]}>
     <div
         class={["flex items-center justify-between px-1 py-1", colorBgMap[topic.color]]}
         onmouseenter={() => isHoveringTitle = true}
@@ -176,18 +176,26 @@
     >
 
         <!-- Move Left -->
-        <Button size="icon-sm" variant="ghost" title="Shift Left" class={["transition-opacity duration-200", showBannerButtons ? "opacity-100" : "opacity-0"]} onclick={shiftTopicsLeft}>
-            <ChevronsLeft/>
-        </Button>
+        {#if topicsLength > 1}
+            <Button size="icon-sm" variant="ghost" title="Shift Left" class={["transition-opacity duration-200", showBannerButtons ? "opacity-100" : "opacity-0"]} onclick={shiftTopicsLeft}>
+                <ChevronsLeft/>
+            </Button>
+        {:else}
+            <div class="w-7"></div>
+        {/if}
 
         <span class="text-lg font-bold text-center break-all px-1 max-w-[280px] text-pastel-foreground">
             {topic.topicName}
         </span>
 
         <!-- Move Right -->
-        <Button size="icon-sm" variant="ghost" title="Shift Right" class={["transition-opacity duration-200", showBannerButtons ? "opacity-100" : "opacity-0"]} onclick={shiftTopicsRight}>
-            <ChevronsRight/>
-        </Button>
+        {#if topicsLength > 1}
+            <Button size="icon-sm" variant="ghost" title="Shift Right" class={["transition-opacity duration-200", showBannerButtons ? "opacity-100" : "opacity-0"]} onclick={shiftTopicsRight}>
+                <ChevronsRight/>
+            </Button>
+        {:else}
+            <div class="w-7"></div>
+        {/if}
     </div>
 
     <div class={["h-[2px] w-full", colorBorderBgMap[topic.color]]}></div>
