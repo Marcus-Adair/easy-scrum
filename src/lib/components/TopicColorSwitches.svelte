@@ -28,7 +28,13 @@
     }
     let colorChosenState = $state<Record<ColorOption, boolean>>(getColorState(topicColor));
     $effect(() => {
-        if (dialogOpen) colorChosenState = getColorState(topicColor);
+        if (dialogOpen) {
+            // Auto-select pink if no color selected
+            if (!topicColor) {
+                topicColor = "pink";
+            }
+            colorChosenState = getColorState(topicColor);
+        }
     })
     function setColorState(color: ColorOption) {
         if (!colorChosenState[color]) {

@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { db } from '../db';
-import { scrumSession } from '../db/schema';
+import { scrumSession, noteCategory } from '../db/schema';
 
 export type CreateScrumSessionInput = {
 	name: string;
@@ -12,6 +12,14 @@ export type UpdateScrumSessionInput = {
 
 export async function createScrumSession(input: CreateScrumSessionInput) {
 	const [session] = await db.insert(scrumSession).values(input).returning();
+
+	// Create a default "Note" category for the new session
+	await db.insert(noteCategory).values({
+		scrumSessionId: session.id,
+		categoryName: 'Note',
+		color: 'yellow'
+	});
+
 	return session;
 }
 

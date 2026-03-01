@@ -1,25 +1,31 @@
 <script lang="ts">
-	import type { Note, NoteCategory } from "$lib/types";
+	import type { Note, NoteCategory, Topic } from "$lib/types";
     import { Dialog, DialogFooter, DialogTitle, DialogClose, DialogContent, DialogTrigger } from "$lib/components/ui/dialog";
+	import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
 	import { Button, buttonVariants } from "./ui/button";
 	import { formatDate } from "$lib/utils";
-	import { ChevronsDown, ChevronsUp, StickyNote, MessageSquarePlus, Pencil, Trash2 } from "@lucide/svelte";
+	import { ChevronsDown, ChevronsUp, StickyNote, MessageSquarePlus, Pencil, Trash2, NotebookPen } from "@lucide/svelte";
 	import { Textarea } from "./ui/textarea";
 	import { AlertDialog, AlertDialogContent, AlertDialogFooter, AlertDialogTitle } from "./ui/alert-dialog";
 	import { Label } from "./ui/label";
 	import { Input } from "./ui/input";
 	import { toast } from "svelte-sonner";
 	import { invalidateAll } from "$app/navigation";
-	import { updateNoteHeader, deleteNoteById, updateNoteCategory } from "$lib/remote-functions/note.remote";
+	import { updateNoteHeader, updateNoteContent, deleteNoteById, updateNoteCategory, shiftNoteColIndices, moveNoteToTopic } from "$lib/remote-functions/note.remote";
 	import { createNewComment } from "$lib/remote-functions/comment.remote";
 	import NoteCategorySwitches from "./NoteCategorySwitches.svelte";
 	import { ScrollArea } from "./ui/scroll-area";
+	import { hoverColorBgMap, colorBgMap } from "$lib/consts"; // colorBorderMap, colorBorderBgMap
+	import { Badge } from "./ui/badge";
 
     interface Props {
         note: Note;
+        allNotes: Note[];
+        allTopics: Topic[];
         noteCategories: NoteCategory[];
     }
-    let { note, noteCategories }: Props = $props();
+    let { note, allNotes, allTopics, noteCategories }: Props = $props();
+    let notesLength = $derived(allNotes.length);
 
     // Modal stuff
     let isNoteModalOpen = $state(false);
@@ -32,6 +38,10 @@
         isHoveringNote = false;
     }
     let scaleNote = $derived (isHoveringNote || isNoteModalOpen )
+
+    // Sticky note rotation based on colIdx
+    const rotations = ['rotate-1', '-rotate-1', 'rotate-1'];
+    let noteRotation = $derived(rotations[note.colIdx % rotations.length]);
 
 
     // Edit stuff
@@ -58,6 +68,30 @@
             toast.error("Failed to update note header");
         }
         editHeaderDialogOpen = false;
+    }
+
+    // Edit note content
+    let editContentDialogOpen = $state(false);
+    let editNoteContent = $state('');
+    $effect(() => {
+        editNoteContent = note.notes ?? '';
+    });
+    $effect(() => {
+        if (editContentDialogOpen) editNoteContent = note.notes ?? '';
+    });
+    async function saveNoteContent() {
+        if (!editNoteContent.trim()) {
+            toast.error("Note content cannot be empty!");
+            return;
+        }
+        try {
+            await updateNoteContent({ id: note.id, notes: editNoteContent.trim() });
+            editContentDialogOpen = false;
+            invalidateAll();
+        } catch (e) {
+            console.error("Failed to update note content:", e);
+            toast.error("Failed to update note content");
+        }
     }
 
     // Delete note
@@ -95,7 +129,6 @@
         }
     }
 
-    // Add comment
     let newCommentContent = $state('');
     async function addComment() {
         if (!newCommentContent.trim()) {
@@ -112,40 +145,86 @@
             toast.error("Failed to add comment");
         }
     }
-</script>
 
-<!-- Note: Dialog for creating a note should be a textarea so i can do multiple lines in a comment -->
+    async function shiftNotesUp() {
+        // Circular shift up: each note's index decreases by 1, first wraps to last
+        const updates = allNotes.map(n => ({
+            id: n.id,
+            colIdx: (n.colIdx - 1 + notesLength) % notesLength
+        }));
+        try {
+            await shiftNoteColIndices({ updates });
+            invalidateAll();
+        } catch (e) {
+            console.error("Failed to shift notes:", e);
+            toast.error("Failed to shift notes");
+        }
+    }
+
+    async function shiftNotesDown() {
+        // Circular shift down: each note's index increases by 1, last wraps to first
+        const updates = allNotes.map(n => ({
+            id: n.id,
+            colIdx: (n.colIdx + 1) % notesLength
+        }));
+        try {
+            await shiftNoteColIndices({ updates });
+            invalidateAll();
+        } catch (e) {
+            console.error("Failed to shift notes:", e);
+            toast.error("Failed to shift notes");
+        }
+    }
+
+    async function moveToTopic(targetTopic: Topic) {
+        if (targetTopic.id === note.topicId) return;
+        try {
+            await moveNoteToTopic({
+                id: note.id,
+                topicId: targetTopic.id,
+                colIdx: targetTopic.notes.length
+            });
+            isNoteModalOpen = false;
+            invalidateAll();
+            toast.success(`Moved to "${targetTopic.topicName}"`);
+        } catch (e) {
+            console.error("Failed to move note:", e);
+            toast.error("Failed to move note");
+        }
+    }
+</script>
 
 <Dialog bind:open={isNoteModalOpen}>
     <DialogTrigger title="See/Edit Note">
-        <!-- , colorBgMap[note.noteCategory?.color ?? "yellow"] -->
         <div
             bind:this={noteDiv}
-            class={["flex flex-col gap-2 rounded-md border border-border cursor-pointer transition-all duration-150 ease-in", scaleNote && "scale-[1.025] shadow-xs", "bg-card"]}
+            class={["sticky-note flex flex-col gap-2 cursor-pointer transition-all duration-150 ease-in", scaleNote && "scale-[1.025]", noteRotation, "text-pastel-foreground", colorBgMap[note.noteCategory?.color!]]}
             onmouseenter={hoverNote}
             onmouseleave={stopHoverNote}
             role="banner"
         >
             <div class="flex flex-col">
-                <span class="pt-2 pb-1.5 px-3 text-start">{note.header}</span>
-                <div class="w-full h-px bg-border"></div>
+                <span class="pt-2 px-3 text-start wrap-break-word font-semibold">{note.header}</span>
+
+                <!-- <div class={["w-full h-[2px]", colorBorderBgMap[note.noteCategory?.color!]]}></div> -->
             </div>
-            <span class="text-sm pb-3 pt-1 px-3 text-start">{note.notes}</span>
+            <span class="text-sm pb-3 pt-1 px-3 text-start wrap-break-word">{note.notes}</span>
         </div>
     </DialogTrigger>
-    <DialogContent>
-        <DialogTitle>
-                <div class="flex items-center gap-1.5">
-                    <span>{note.header}</span>
-                    <div class="flex mr-1.5">
-                        <Dialog bind:open={editHeaderDialogOpen}>
+    <DialogContent class="overflow-hidden">
+        <DialogTitle class="w-full overflow-hidden">
+                <div class="flex flex-col gap-2 w-full">
+                    <span class="break-all">{note.header}</span>
+                    <div class="flex justify-between gap-2 items-center">
+                        <div class="flex flex-wrap gap-0.5">
+                            <Dialog bind:open={editHeaderDialogOpen}>
                             <DialogTrigger
                                 class={[buttonVariants({ variant: "ghost", size: "icon" })]}
                                 title="Edit Header"
                             >
                                 <Pencil class="size-4"/>
                             </DialogTrigger>
-                
+
                             <DialogContent noOverlay class="w-[450px]">
                                 <DialogTitle>Edit Note Header</DialogTitle>
                                 <div class="flex flex-col gap-2 mt-2">
@@ -159,7 +238,7 @@
                                     />
                                 </div>
                                 <DialogFooter>
-                                    <DialogClose class={buttonVariants({ variant: "outline" })}>
+                                    <DialogClose class={buttonVariants({ variant: "ghost" })}>
                                         Cancel
                                     </DialogClose>
                                     <Button onclick={saveNoteHeader} disabled={!editNoteHeader}>Save</Button>
@@ -178,7 +257,7 @@
                                 <DialogTitle>Edit Note Category</DialogTitle>
                                 <NoteCategorySwitches {noteCategories} bind:noteCategoryId={editNoteCategoryId} dialogOpen={isEditCategoryOpen}/>
                                 <DialogFooter>
-                                    <DialogClose class={buttonVariants({ variant: "outline" })}>
+                                    <DialogClose class={buttonVariants({ variant: "ghost" })}>
                                         Cancel
                                     </DialogClose>
                                     <Button onclick={saveNoteCategory}>Save</Button>
@@ -197,24 +276,78 @@
                                 <span>Are you sure you want to delete this note? This will delete all associated comments.</span>
 
                                 <AlertDialogFooter>
-                                    <DialogClose class={buttonVariants({ variant: "outline" })}>
+                                    <DialogClose class={buttonVariants({ variant: "ghost" })}>
                                         Cancel
                                     </DialogClose>
                                     <Button onclick={deleteNote}>Confirm</Button>
                                 </AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>
-                        <Button size="icon" variant="ghost" title="Shift Note Up"><ChevronsUp class="size-4"/></Button>
-                        <Button size="icon" variant="ghost" title="Shift Note Down"><ChevronsDown class="size-4"/></Button>  
+                        {#if notesLength > 1}
+                            <Button size="icon" variant="ghost" title="Shift Note Up" onclick={shiftNotesUp}><ChevronsUp class="size-4"/></Button>
+                            <Button size="icon" variant="ghost" title="Shift Note Down" onclick={shiftNotesDown}><ChevronsDown class="size-4"/></Button>
+                        {/if}
+                        <DropdownMenu.Root>
+                            <DropdownMenu.Trigger class={[buttonVariants({ variant: "ghost", size: "icon" })]} title="Move to Topic">
+                                <NotebookPen class="size-4"/>
+                            </DropdownMenu.Trigger>
+                            <DropdownMenu.Content>
+                                <DropdownMenu.Group>
+                                    {#each allTopics.sort((a, b) => a.rowIdx - b.rowIdx) as targetTopic}
+                                        <DropdownMenu.Item
+                                            class={[hoverColorBgMap[targetTopic.color], "break-words max-w-[200px] data-highlighted:text-pastel-foreground"]}
+                                            onclick={() => moveToTopic(targetTopic)}
+                                            disabled={targetTopic.id === note.topicId}
+                                        >
+                                            {targetTopic.topicName}
+                                        </DropdownMenu.Item>
+                                    {/each}
+                                </DropdownMenu.Group>
+                            </DropdownMenu.Content>
+                        </DropdownMenu.Root>
+                        </div>
+                        {#if note.noteCategory}
+                            <Badge variant={note.noteCategory.color}>{note.noteCategory.categoryName}</Badge>
+                        {/if}
                     </div>
                 </div>
         </DialogTitle>
 
         <div class="flex flex-col gap-2 mt-2">
             <div class="flex flex-col gap-0.5">
-                <span class="text-sm text-muted-foreground">Note:</span>
+                <div class="flex items-end justify-between gap-1">
+                    <span class="text-sm text-muted-foreground">Note:</span>
+                    <Dialog bind:open={editContentDialogOpen}>
+                        <DialogTrigger
+                            class={[buttonVariants({ variant: "ghost", size: "icon-sm" })]}
+                            title="Edit Note Content"
+                        >
+                            <Pencil class="size-3.5"/>
+                        </DialogTrigger>
+                        <DialogContent noOverlay class="w-[500px]">
+                            <DialogTitle>Edit Note Content</DialogTitle>
+                            <div class="flex flex-col gap-2 mt-2">
+                                <Label for="editNoteContent">Note:</Label>
+                                <Textarea
+                                    bind:value={editNoteContent}
+                                    name="editNoteContent"
+                                    id="editNoteContent"
+                                    placeholder="Note content..."
+                                    class="min-h-[120px]"
+                                    required
+                                />
+                            </div>
+                            <DialogFooter>
+                                <DialogClose class={buttonVariants({ variant: "ghost" })}>
+                                    Cancel
+                                </DialogClose>
+                                <Button onclick={saveNoteContent} disabled={!editNoteContent.trim()}>Save</Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                </div>
                 <div class="w-full h-px bg-border mb-1"></div>
-                <span>{note.notes}</span>
+                <span class="wrap-break-word">{note.notes}</span>
                 <!-- TODO: add createdBy in comment ... refers to a user -->
                 <span class="text-xs text-end text-muted-foreground">- Todo</span>
             </div>
@@ -232,7 +365,7 @@
                 <ScrollArea class="space-y-2 max-h-64 w-full rounded-md border">
                     {#each note.comments as comment}
                         <div class="border border-border rounded-md flex flex-col p-1.5 m-1.5">
-                            <span>{comment.content}</span>
+                            <span class="break-words">{comment.content}</span>
 
                             <!-- TODO: add createdBy in comment ... refers to a user -->
                             <span class="text-xs text-end text-muted-foreground">- Todo</span>
@@ -241,7 +374,7 @@
                 </ScrollArea>
                 <div class="flex gap-2">
                     <Textarea bind:value={newCommentContent} placeholder="Add comment..."/>
-                    <Button size="icon" variant="ghost" title="Add Comment" onclick={addComment} disabled={!newCommentContent.trim()}>
+                    <Button size="icon" variant="outline" title="Add Comment" onclick={addComment} disabled={!newCommentContent.trim()}>
                         <MessageSquarePlus class="size-4"/>
                     </Button>
                 </div>
@@ -254,7 +387,7 @@
             </div>
         </div>
         <DialogFooter>
-            <DialogClose class={buttonVariants({ variant: "outline" })}>
+            <DialogClose class={buttonVariants({ variant: "ghost" })}>
                 Close
             </DialogClose>
         </DialogFooter>

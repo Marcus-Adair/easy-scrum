@@ -13,7 +13,7 @@
 	--popover-foreground: oklch(0.2795 0.0368 260.031);
 	--primary: oklch(0.5854 0.2041 277.1173);
 	--primary-foreground: oklch(1 0 0);
-	--secondary: oklch(0.8687 0.0043 56.366);
+	--secondary: oklch(0.967 0.0043 56.366);
 	--secondary-foreground: oklch(0.4461 0.0263 256.8018);
 	--muted: oklch(0.9232 0.0026 48.7171);
 	--muted-foreground: oklch(0.551 0.0234 264.3637);
@@ -40,7 +40,7 @@
 	--font-sans: Plus Jakarta Sans, sans-serif;
 	--font-serif: Lora, serif;
 	--font-mono: Roboto Mono, monospace;
-	--radius: 0.6rem;
+	--radius: 0.35rem;
 	--shadow-x: 2px;
 	--shadow-y: 2px;
 	--shadow-blur: 10px;
@@ -58,6 +58,9 @@
 	--tracking-normal: 0em;
 	--spacing: 0.25rem;
 
+	/* Text color for pastel backgrounds (always dark) */
+	--pastel-foreground: rgb(40 40 40);
+
 	/* Pre-set Colors (Pastel) */
 	--pink: rgb(255 182 193);
 	--yellow: rgb(255 250 186);
@@ -68,6 +71,17 @@
 	--green: rgb(186 255 201);
 	--white: rgb(250 250 250);
 	--purple: rgb(221 190 239);
+
+	/* Border Colors (Darker versions) */
+	--pink-border: rgb(219 130 145);
+	--yellow-border: rgb(204 195 120);
+	--blue-border: rgb(120 170 190);
+	--orange-border: rgb(210 165 130);
+	--salmon-border: rgb(210 125 110);
+	--red-border: rgb(210 130 130);
+	--green-border: rgb(130 200 145);
+	--white-border: rgb(200 200 200);
+	--purple-border: rgb(175 140 195);
 }
 
 .dark {
@@ -106,7 +120,7 @@
 	--font-sans: Plus Jakarta Sans, sans-serif;
 	--font-serif: Lora, serif;
 	--font-mono: Roboto Mono, monospace;
-	--radius: 0.6rem;
+	--radius: 0.35rem;
 	--shadow-x: 2px;
 	--shadow-y: 2px;
 	--shadow-blur: 10px;
@@ -122,6 +136,9 @@
 	--shadow-xl: 2px 2px 10px 4px hsl(0 0% 0% / 0.18), 2px 8px 10px 3px hsl(0 0% 0% / 0.18);
 	--shadow-2xl: 2px 2px 10px 4px hsl(0 0% 0% / 0.45);
 
+	/* Text color for pastel backgrounds (always dark) */
+	--pastel-foreground: rgb(40 40 40);
+
 	/* Pre-set Colors (Pastel) */
 	--pink: rgb(255 182 193);
 	--yellow: rgb(255 250 186);
@@ -132,6 +149,17 @@
 	--green: rgb(186 255 201);
 	--white: rgb(250 250 250);
 	--purple: rgb(221 190 239);
+
+	/* Border Colors (Darker versions for dark mode) */
+	--pink-border: rgb(180 100 115);
+	--yellow-border: rgb(170 160 90);
+	--blue-border: rgb(90 140 160);
+	--orange-border: rgb(175 130 95);
+	--salmon-border: rgb(175 95 80);
+	--red-border: rgb(175 100 100);
+	--green-border: rgb(100 165 115);
+	--white-border: rgb(160 160 160);
+	--purple-border: rgb(145 110 165);
 }
 
 @theme inline {
@@ -186,6 +214,8 @@
 	--shadow-xl: var(--shadow-xl);
 	--shadow-2xl: var(--shadow-2xl);
 
+	--color-pastel-foreground: var(--pastel-foreground);
+
 	--color-pink: var(--pink);
 	--color-yellow: var(--yellow);
 	--color-blue: var(--blue);
@@ -195,6 +225,16 @@
 	--color-green: var(--green);
 	--color-white: var(--white);
 	--color-purple: var(--purple);
+
+	--color-pink-border: var(--pink-border);
+	--color-yellow-border: var(--yellow-border);
+	--color-blue-border: var(--blue-border);
+	--color-orange-border: var(--orange-border);
+	--color-salmon-border: var(--salmon-border);
+	--color-red-border: var(--red-border);
+	--color-green-border: var(--green-border);
+	--color-white-border: var(--white-border);
+	--color-purple-border: var(--purple-border);
 }
 
 @layer base {
@@ -204,4 +244,33 @@
 	body {
 		@apply bg-background text-foreground;
 	}
+}
+
+/* Sticky note folded corner effect */
+.sticky-note {
+	position: relative;
+}
+
+.sticky-note::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	right: 0;
+	width: 0;
+	height: 0;
+	border-style: solid;
+	border-width: 0 20px 20px 0;
+	border-color: transparent var(--card) transparent transparent;
+	z-index: 1;
+}
+
+.sticky-note::after {
+	content: '';
+	position: absolute;
+	top: 0;
+	right: 0;
+	width: 20px;
+	height: 20px;
+	background: linear-gradient(225deg, transparent 50%, rgba(0, 0, 0, 0.1) 50%);
+	z-index: 2;
 }

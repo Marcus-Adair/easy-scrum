@@ -6,22 +6,23 @@
 	import { Dialog, DialogFooter, DialogTitle, DialogClose, DialogContent, DialogTrigger } from "$lib/components/ui/dialog";
 	import { Label } from "$lib/components/ui/label";
 	import { Input } from "$lib/components/ui/input";
-	import { updateTopicName, updateTopicColor, deleteTopicById } from "$lib/remote-functions/topic.remote";
+	import { updateTopicName, updateTopicColor, deleteTopicById, shiftTopicRowIndices } from "$lib/remote-functions/topic.remote";
 	import { createNewNote } from "$lib/remote-functions/note.remote";
 	import { toast } from "svelte-sonner";
 	import { invalidateAll } from "$app/navigation";
 	import { Textarea } from "./ui/textarea";
-	import { colorBgMap } from "$lib/consts";
+	import { colorBgMap, colorBorderBgMap, colorBorderMap } from "$lib/consts";
 	import { AlertDialog, AlertDialogContent, AlertDialogFooter, AlertDialogTitle } from "./ui/alert-dialog";
 	import TopicColorSwitches from "./TopicColorSwitches.svelte";
 	import NoteCategorySwitches from "./NoteCategorySwitches.svelte";
 
     interface Props {
         topic: Topic
-        topicsLength: number;
+        allTopics: Topic[];
         noteCategories: NoteCategory[];
     }
-    let { topic, topicsLength, noteCategories }: Props = $props();
+    let { topic, allTopics, noteCategories }: Props = $props();
+    let topicsLength = $derived(allTopics.length);
 
 
  
@@ -132,46 +133,77 @@
 
     let isHoveringTitle = $state(false);
     let showBannerButtons = $derived (isHoveringTitle || isEditNameOpen)
+
+    async function shiftTopicsLeft() {
+        // Circular shift left: each topic's index decreases by 1, first wraps to last
+        const updates = allTopics.map(t => ({
+            id: t.id,
+            rowIdx: (t.rowIdx - 1 + topicsLength) % topicsLength
+        }));
+        try {
+            await shiftTopicRowIndices({ updates });
+            invalidateAll();
+        } catch (e) {
+            console.error("Failed to shift topics:", e);
+            toast.error("Failed to shift topics");
+        }
+    }
+
+    async function shiftTopicsRight() {
+        // Circular shift right: each topic's index increases by 1, last wraps to first
+        const updates = allTopics.map(t => ({
+            id: t.id,
+            rowIdx: (t.rowIdx + 1) % topicsLength
+        }));
+        try {
+            await shiftTopicRowIndices({ updates });
+            invalidateAll();
+        } catch (e) {
+            console.error("Failed to shift topics:", e);
+            toast.error("Failed to shift topics");
+        }
+    }
 </script>
 
-<!--     style={`background-color: ${topic.color},`}              -->
-
-<div class={["flex flex-col rounded-md border border-border min-w-[360px] max-w-[360px] min-h-[250px]", colorBgMap[topic.color]]}>
+     
+<!-- colorBgMap[topic.color] -->
+<div class={["flex flex-col rounded-md border-2 min-w-[360px] max-w-[360px] min-h-[250px] text-card-foreground overflow-hidden", "bg-card", colorBorderMap[topic.color]]}>
     <div
-        class="flex items-center justify-between px-1 py-1"
+        class={["flex items-center justify-between px-1 py-1", colorBgMap[topic.color]]}
         onmouseenter={() => isHoveringTitle = true}
         onmouseleave={() => isHoveringTitle = false}
         role="banner"
     >
 
         <!-- Move Left -->
-        {#if topic.rowIdx !== 0}
-            <Button size="icon-sm" variant="ghost" title="Shift Left" class={["transition-opacity duration-200", showBannerButtons ? "opacity-100" : "opacity-0"]}>
+        {#if topicsLength > 1}
+            <Button size="icon-sm" variant="ghost" title="Shift Left" class={["transition-opacity duration-200", showBannerButtons ? "opacity-100" : "opacity-0"]} onclick={shiftTopicsLeft}>
                 <ChevronsLeft/>
             </Button>
         {:else}
-            <div></div>
+            <div class="w-7"></div>
         {/if}
 
-        <span class="text-lg font-bold">
+        <span class="text-lg font-bold text-center break-all px-1 max-w-[280px] text-pastel-foreground">
             {topic.topicName}
         </span>
-     
+
         <!-- Move Right -->
-        {#if topic.rowIdx !== topicsLength - 1}
-            <Button size="icon-sm" variant="ghost" title="Shift Right" class={["transition-opacity duration-200", showBannerButtons ? "opacity-100" : "opacity-0"]}>
+        {#if topicsLength > 1}
+            <Button size="icon-sm" variant="ghost" title="Shift Right" class={["transition-opacity duration-200", showBannerButtons ? "opacity-100" : "opacity-0"]} onclick={shiftTopicsRight}>
                 <ChevronsRight/>
             </Button>
         {:else}
-            <div></div>
+            <div class="w-7"></div>
         {/if}
     </div>
-    <div class="h-px w-full bg-border"></div>
+
+    <div class={["h-[2px] w-full", colorBorderBgMap[topic.color]]}></div>
 
     <div class="flex gap-1 mx-4 mt-2 justify-center">
         <Dialog bind:open={isEditNameOpen}>
             <DialogTrigger
-                class={[buttonVariants({ variant: "outline", size: "sm" })]}
+                class={[buttonVariants({ variant: "secondary", size: "sm" })]}
                 title="Edit Name"
             >
                 Name<Pencil class="size-3.5"/>
@@ -200,7 +232,7 @@
 
         <Dialog bind:open={isEditColorOpen}>
             <DialogTrigger
-                class={[buttonVariants({ variant: "outline", size: "sm" })]}
+                class={[buttonVariants({ variant: "secondary", size: "sm" })]}
                 title="Edit Color"
             >
                 Color<Palette/>
@@ -223,7 +255,7 @@
 
         <AlertDialog bind:open={isDeleteTopicOpen}>
             <DialogTrigger
-                class={[buttonVariants({ variant: "outline", size: "sm" })]}
+                class={[buttonVariants({ variant: "secondary", size: "sm" })]}
                 title="Delete"
             >
                 Delete<Trash2 class="text-destructive"/>
@@ -243,7 +275,7 @@
 
         <Dialog bind:open={isNewNoteOpen}>
             <DialogTrigger
-                class={[buttonVariants({ variant: "outline", size: "sm" })]}
+                class={[buttonVariants({ variant: "secondary", size: "sm" })]}
                 title="Post Note"
             >
                 Post<Plus/>
@@ -283,14 +315,14 @@
         </Dialog>
     </div>
 
-    <div class="flex flex-col gap-2 px-4 py-2">
+    <div class="flex flex-col gap-4 px-4 py-4.5">
         {#if topic.notes.length}
-            {#each topic.notes as note}
-                <Note {note} {noteCategories}/>
+            {#each topic.notes.sort((a, b) => a.colIdx - b.colIdx) as note}
+                <Note {note} allNotes={topic.notes} {allTopics} {noteCategories}/>
             {/each}
         {:else}
             <div class="flex flex-col gap-1 px-4 mt-4">
-                <span class="text-center">No Notes</span>
+                <span class="text-center text-card-foreground">No Notes</span>
                 <span class="text-center text-sm text-muted-foreground">Post a Note</span>
             </div>
         {/if}

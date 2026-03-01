@@ -155,7 +155,7 @@
         <div class="sticky top-0 left-0 z-10">
             <div class="relative flex justify-center items-center border-b border-border px-2 py-3">
                 <Dialog bind:open={createTopicDialogOpen}>
-                    <DialogTrigger class={["absolute left-5", buttonVariants({ variant: "outline", size: "sm" })]} title="Create Topic">
+                    <DialogTrigger class={["absolute right-5", buttonVariants({ variant: "outline", size: "sm" })]} title="Create Topic">
                         Create Topic
                         <NotebookPen/>
                     </DialogTrigger>
@@ -182,6 +182,36 @@
                     </DialogContent>
                 </Dialog>
                 <h1 class="text-primary font-bold text-lg mb-1">{scrumSession.name}</h1>
+                <DropdownMenu.Root>
+                    <DropdownMenu.Trigger
+                        class={["absolute left-5", buttonVariants({ variant: "outline", size: "sm" })]}
+                    >
+                        Note Categories <StickyNote/>
+                    </DropdownMenu.Trigger>
+                    <DropdownMenu.Content>
+                        <DropdownMenu.Group>
+                            {#each scrumSession.noteCategories as noteCategory}
+                                <DropdownMenu.Sub>
+                                    <DropdownMenu.SubTrigger class={[hoverColorBgMap[noteCategory.color], "data-highlighted:text-gray-800 data-[state=open]:text-gray-800"]}>{noteCategory.categoryName}</DropdownMenu.SubTrigger>
+                                    <DropdownMenu.SubContent>
+                                        <DropdownMenu.Item class={[hoverColorBgMap[noteCategory.color], "data-highlighted:text-gray-800"]} title="Edit Name" onclick={() => openEditCategoryName(noteCategory)}>Edit Name<Pencil/></DropdownMenu.Item>
+                                        <DropdownMenu.Item class={[hoverColorBgMap[noteCategory.color], "data-highlighted:text-gray-800"]} title="Edit Color" onclick={() => openEditCategoryColor(noteCategory)}>Edit Color<Palette/></DropdownMenu.Item>
+                                        <DropdownMenu.Item class={[hoverColorBgMap[noteCategory.color], "data-highlighted:text-gray-800"]} title="Delete" onclick={() => openDeleteCategory(noteCategory)}>Delete<Trash2 class="text-destructive"/></DropdownMenu.Item>
+                                    </DropdownMenu.SubContent>
+                                </DropdownMenu.Sub>
+                            {/each}
+                            {#if scrumSession.noteCategories.length}
+                                <DropdownMenu.Separator />
+                            {/if}
+
+                            <DropdownMenu.Item title="New Note Category" class="justify-between" onclick={() => isNewCategoryModalOpen = true}>
+                                New Category<Plus/>
+                            </DropdownMenu.Item>
+                        </DropdownMenu.Group>
+                    </DropdownMenu.Content>
+                </DropdownMenu.Root>
+
+                <!-- Edit note category color -->
                 <Dialog bind:open={isNewCategoryModalOpen}>
                     <DialogContent class="gap-8">
                         <DialogTitle>New Note Category</DialogTitle>
@@ -205,34 +235,6 @@
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
-                <DropdownMenu.Root>
-                    <DropdownMenu.Trigger
-                        class={["absolute right-5", buttonVariants({ variant: "outline", size: "sm" })]}
-                    >
-                        Note Categories <StickyNote/>
-                    </DropdownMenu.Trigger>
-                    <DropdownMenu.Content>
-                        <DropdownMenu.Group>
-                            {#each scrumSession.noteCategories as noteCategory}
-                                <DropdownMenu.Sub>
-                                    <DropdownMenu.SubTrigger class={hoverColorBgMap[noteCategory.color]}>{noteCategory.categoryName}</DropdownMenu.SubTrigger>
-                                    <DropdownMenu.SubContent>
-                                        <DropdownMenu.Item class={hoverColorBgMap[noteCategory.color]} title="Edit Name" onclick={() => openEditCategoryName(noteCategory)}>Edit Name<Pencil/></DropdownMenu.Item>
-                                        <DropdownMenu.Item class={hoverColorBgMap[noteCategory.color]} title="Edit Color" onclick={() => openEditCategoryColor(noteCategory)}>Edit Color<Palette/></DropdownMenu.Item>
-                                        <DropdownMenu.Item class={hoverColorBgMap[noteCategory.color]} title="Delete" onclick={() => openDeleteCategory(noteCategory)}>Delete<Trash2 class="text-destructive"/></DropdownMenu.Item>
-                                    </DropdownMenu.SubContent>
-                                </DropdownMenu.Sub>
-                            {/each}
-                            {#if scrumSession.noteCategories.length}
-                                <DropdownMenu.Separator />
-                            {/if}
-
-                            <DropdownMenu.Item title="New Note Category" class="justify-between" onclick={() => isNewCategoryModalOpen = true}>
-                                New Category<Plus/>
-                            </DropdownMenu.Item>
-                        </DropdownMenu.Group>
-                    </DropdownMenu.Content>
-                </DropdownMenu.Root>
 
                 <!-- Edit Category Name Dialog -->
                 <Dialog bind:open={isEditCategoryNameOpen}>
@@ -284,7 +286,7 @@
         {#if scrumSession.topics.length}
             <div class="flex flex-wrap justify-center gap-3 p-5 max-w-6xl">
                 {#each scrumSession.topics.sort((a, b) => a.rowIdx - b.rowIdx) as topic}
-                    <Topic {topic} topicsLength={scrumSession.topics.length} noteCategories={scrumSession.noteCategories}/>
+                    <Topic {topic} allTopics={scrumSession.topics} noteCategories={scrumSession.noteCategories}/>
                 {/each}
             </div>
         {:else}
@@ -295,20 +297,6 @@
                 </div>
             </div>
         {/if}
-
-        <!-- <div class="grid grid-cols-3 justify-center gap-3 p-5">
-            {#if scrumSession.topics.length}
-                {#each scrumSession.topics.sort((a, b) => a.rowIdx - b.rowIdx) as topic}
-                    <Topic {topic} topicsLength={scrumSession.topics.length} noteCategories={scrumSession.noteCategories}/>
-                {/each}
-               
-            {:else}
-                <div class="flex flex-col gap-0 px-4">
-                    <span class="text-lg text-center">No Topics</span>
-                    <span class="text-center text-sm text-muted-foreground">Create a topic to start adding notes to it</span>
-                </div>
-            {/if}
-        </div> -->
     </div>
 </div>
 

@@ -21,17 +21,7 @@ export const switchColorBgMap: Record<ColorOption, string> = {
     white: "data-[state=checked]:bg-white",
     purple: "data-[state=checked]:bg-purple",
 }
-export const colorBgMap: Record<ColorOption, string> = {
-    pink: "bg-pink",
-    yellow: "bg-yellow",
-    blue: "bg-blue",
-    orange: "bg-orange",
-    salmon: "bg-salmon",
-    red: "bg-red",
-    green: "bg-green",
-    white: "bg-white",
-    purple: "bg-purple",
-}
+
 
 export const hoverColorBgMap: Record<ColorOption, string> = {
     pink: "data-highlighted:bg-pink data-[state=open]:bg-pink",
@@ -45,3 +35,39 @@ export const hoverColorBgMap: Record<ColorOption, string> = {
     purple: "data-highlighted:bg-purple data-[state=open]:bg-purple",
 }
 
+export const colorBgMap: Record<ColorOption, string> = {
+    pink: "bg-pink",
+    yellow: "bg-yellow",
+    blue: "bg-blue",
+    orange: "bg-orange",
+    salmon: "bg-salmon",
+    red: "bg-red",
+    green: "bg-green",
+    white: "bg-white",
+    purple: "bg-purple",
+}
+
+export const colorBorderMap: Record<ColorOption, string> = {
+    pink: "border-pink-border",
+    yellow: "border-yellow-border",
+    blue: "border-blue-border",
+    orange: "border-orange-border",
+    salmon: "border-salmon-border",
+    red: "border-red-border",
+    green: "border-green-border",
+    white: "border-white-border",
+    purple: "border-purple-border",
+}
+
+
+export const colorBorderBgMap: Record<ColorOption, string> = {
+    pink: "bg-pink-border",
+    yellow: "bg-yellow-border",
+    blue: "bg-blue-border",
+    orange: "bg-orange-border",
+    salmon: "bg-salmon-border",
+    red: "bg-red-border",
+    green: "bg-green-border",
+    white: "bg-white-border",
+    purple: "bg-purple-border",
+}

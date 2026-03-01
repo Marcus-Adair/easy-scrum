@@ -18,7 +18,7 @@
 <Toaster/>
 <ModeWatcher />
 <div class="flex flex-col min-h-screen">
-	<header class="flex border-b border-border py-2 px-4 justify-between items-center">
+	<header class="sticky top-0 z-50 shadow-xs flex border-b border-border bg-background py-2 px-4 justify-between items-center">
 		<a href="/" class="font-bold text-lg text-primary" title="Go Home">Easy-Scrum</a>
 
 		<Button onclick={toggleMode} variant="outline" size="icon" title="Toggle Mode">
