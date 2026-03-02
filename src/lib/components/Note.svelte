@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Note, NoteCategory, Topic } from "$lib/types";
+	import type { Note, NoteCategory, Topic, SignedInUser } from "$lib/types";
     import { Dialog, DialogFooter, DialogTitle, DialogClose, DialogContent, DialogTrigger } from "$lib/components/ui/dialog";
 	import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
 	import { Button, buttonVariants } from "./ui/button";
@@ -12,7 +12,8 @@
 	import { toast } from "svelte-sonner";
 	import { invalidateAll } from "$app/navigation";
 	import { updateNoteHeader, updateNoteContent, deleteNoteById, updateNoteCategory, shiftNoteColIndices, moveNoteToTopic } from "$lib/remote-functions/note.remote";
-	import { createNewComment } from "$lib/remote-functions/comment.remote";
+	import { createNewComment, updateCommentContent, deleteCommentById } from "$lib/remote-functions/comment.remote";
+	import type { Comment } from "$lib/types";
 	import NoteCategorySwitches from "./NoteCategorySwitches.svelte";
 	import { ScrollArea } from "./ui/scroll-area";
 	import { hoverColorBgMap, colorBgMap } from "$lib/consts"; // colorBorderMap, colorBorderBgMap
@@ -23,9 +24,11 @@
         allNotes: Note[];
         allTopics: Topic[];
         noteCategories: NoteCategory[];
+        currentUser?: SignedInUser;
     }
-    let { note, allNotes, allTopics, noteCategories }: Props = $props();
+    let { note, allNotes, allTopics, noteCategories, currentUser }: Props = $props();
     let notesLength = $derived(allNotes.length);
+    let isNoteCreator = $derived(currentUser?.id === note.createdById);
 
     // Modal stuff
     let isNoteModalOpen = $state(false);
@@ -136,13 +139,60 @@
             return;
         }
         try {
-            await createNewComment({ noteId: note.id, content: newCommentContent.trim() });
+            await createNewComment({ noteId: note.id, content: newCommentContent.trim(), createdById: currentUser?.id });
             newCommentContent = '';
             invalidateAll();
             toast.success("Comment added");
         } catch (e) {
             console.error("Failed to add comment:", e);
             toast.error("Failed to add comment");
+        }
+    }
+
+    // Edit comment
+    let editingComment = $state<Comment | null>(null);
+    let editCommentContent = $state('');
+    let isEditCommentOpen = $state(false);
+    function openEditComment(comment: Comment) {
+        editingComment = comment;
+        editCommentContent = comment.content;
+        isEditCommentOpen = true;
+    }
+    async function saveCommentContent() {
+        if (!editingComment || !editCommentContent.trim()) {
+            toast.error("Comment cannot be empty!");
+            return;
+        }
+        try {
+            await updateCommentContent({ id: editingComment.id, content: editCommentContent.trim() });
+            isEditCommentOpen = false;
+            editingComment = null;
+            invalidateAll();
+            toast.success("Comment updated");
+        } catch (e) {
+            console.error("Failed to update comment:", e);
+            toast.error("Failed to update comment");
+        }
+    }
+
+    // Delete comment
+    let isDeleteCommentOpen = $state(false);
+    let deletingComment = $state<Comment | null>(null);
+    function openDeleteComment(comment: Comment) {
+        deletingComment = comment;
+        isDeleteCommentOpen = true;
+    }
+    async function deleteComment() {
+        if (!deletingComment) return;
+        try {
+            await deleteCommentById({ id: deletingComment.id });
+            isDeleteCommentOpen = false;
+            deletingComment = null;
+            invalidateAll();
+            toast.success("Comment deleted");
+        } catch (e) {
+            console.error("Failed to delete comment:", e);
+            toast.error("Failed to delete comment");
         }
     }
 
@@ -217,72 +267,75 @@
                     <span class="break-all">{note.header}</span>
                     <div class="flex justify-between gap-2 items-center">
                         <div class="flex flex-wrap gap-0.5">
-                            <Dialog bind:open={editHeaderDialogOpen}>
-                            <DialogTrigger
-                                class={[buttonVariants({ variant: "ghost", size: "icon" })]}
-                                title="Edit Header"
-                            >
-                                <Pencil class="size-4"/>
-                            </DialogTrigger>
+                            {#if isNoteCreator}
+                                <Dialog bind:open={editHeaderDialogOpen}>
+                                    <DialogTrigger
+                                        class={[buttonVariants({ variant: "ghost", size: "icon" })]}
+                                        title="Edit Header"
+                                    >
+                                        <Pencil class="size-4"/>
+                                    </DialogTrigger>
 
-                            <DialogContent noOverlay class="w-[450px]">
-                                <DialogTitle>Edit Note Header</DialogTitle>
-                                <div class="flex flex-col gap-2 mt-2">
-                                    <Label for="editNoteHeader">Note Header:</Label>
-                                    <Input
-                                        bind:value={editNoteHeader}
-                                        name="editNoteHeader"
-                                        id="editNoteHeader"
-                                        placeholder="Header..."
-                                        required
-                                    />
-                                </div>
-                                <DialogFooter>
-                                    <DialogClose class={buttonVariants({ variant: "ghost" })}>
-                                        Cancel
-                                    </DialogClose>
-                                    <Button onclick={saveNoteHeader} disabled={!editNoteHeader}>Save</Button>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
+                                    <DialogContent noOverlay class="w-[450px]">
+                                        <DialogTitle>Edit Note Header</DialogTitle>
+                                        <div class="flex flex-col gap-2 mt-2">
+                                            <Label for="editNoteHeader">Note Header:</Label>
+                                            <Input
+                                                bind:value={editNoteHeader}
+                                                name="editNoteHeader"
+                                                id="editNoteHeader"
+                                                placeholder="Header..."
+                                                required
+                                            />
+                                        </div>
+                                        <DialogFooter>
+                                            <DialogClose class={buttonVariants({ variant: "ghost" })}>
+                                                Cancel
+                                            </DialogClose>
+                                            <Button onclick={saveNoteHeader} disabled={!editNoteHeader}>Save</Button>
+                                        </DialogFooter>
+                                    </DialogContent>
+                                </Dialog>
 
-                        <Dialog bind:open={isEditCategoryOpen}>
-                            <DialogTrigger
-                                class={[buttonVariants({ variant: "ghost", size: "icon" })]}
-                                title="Edit Note Category"
-                            >
-                                <StickyNote class="size-4"/>
-                            </DialogTrigger>
-                            <DialogContent noOverlay class="w-[450px]">
-                                <DialogTitle>Edit Note Category</DialogTitle>
-                                <NoteCategorySwitches {noteCategories} bind:noteCategoryId={editNoteCategoryId} dialogOpen={isEditCategoryOpen}/>
-                                <DialogFooter>
-                                    <DialogClose class={buttonVariants({ variant: "ghost" })}>
-                                        Cancel
-                                    </DialogClose>
-                                    <Button onclick={saveNoteCategory}>Save</Button>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
-                        <AlertDialog bind:open={isDeleteNoteOpen}>
-                            <DialogTrigger
-                                class={[buttonVariants({ variant: "ghost", size: "icon" })]}
-                                title="Delete Note"
-                            >
-                                <Trash2 class="text-destructive size-4"/>
-                            </DialogTrigger>
-                            <AlertDialogContent noOverlay class="w-[450px]">
-                                <AlertDialogTitle>Delete Note?</AlertDialogTitle>
-                                <span>Are you sure you want to delete this note? This will delete all associated comments.</span>
+                                <Dialog bind:open={isEditCategoryOpen}>
+                                    <DialogTrigger
+                                        class={[buttonVariants({ variant: "ghost", size: "icon" })]}
+                                        title="Edit Note Category"
+                                    >
+                                        <StickyNote class="size-4"/>
+                                    </DialogTrigger>
+                                    <DialogContent noOverlay class="w-[450px]">
+                                        <DialogTitle>Edit Note Category</DialogTitle>
+                                        <NoteCategorySwitches {noteCategories} bind:noteCategoryId={editNoteCategoryId} dialogOpen={isEditCategoryOpen}/>
+                                        <DialogFooter>
+                                            <DialogClose class={buttonVariants({ variant: "ghost" })}>
+                                                Cancel
+                                            </DialogClose>
+                                            <Button onclick={saveNoteCategory}>Save</Button>
+                                        </DialogFooter>
+                                    </DialogContent>
+                                </Dialog>
 
-                                <AlertDialogFooter>
-                                    <DialogClose class={buttonVariants({ variant: "ghost" })}>
-                                        Cancel
-                                    </DialogClose>
-                                    <Button onclick={deleteNote}>Confirm</Button>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
+                                <AlertDialog bind:open={isDeleteNoteOpen}>
+                                    <DialogTrigger
+                                        class={[buttonVariants({ variant: "ghost", size: "icon" })]}
+                                        title="Delete Note"
+                                    >
+                                        <Trash2 class="text-destructive size-4"/>
+                                    </DialogTrigger>
+                                    <AlertDialogContent noOverlay class="w-[450px]">
+                                        <AlertDialogTitle>Delete Note?</AlertDialogTitle>
+                                        <span>Are you sure you want to delete this note? This will delete all associated comments.</span>
+
+                                        <AlertDialogFooter>
+                                            <DialogClose class={buttonVariants({ variant: "ghost" })}>
+                                                Cancel
+                                            </DialogClose>
+                                            <Button onclick={deleteNote}>Confirm</Button>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            {/if}
                         {#if notesLength > 1}
                             <Button size="icon" variant="ghost" title="Shift Note Up" onclick={shiftNotesUp}><ChevronsUp class="size-4"/></Button>
                             <Button size="icon" variant="ghost" title="Shift Note Down" onclick={shiftNotesDown}><ChevronsDown class="size-4"/></Button>
@@ -295,7 +348,7 @@
                                 <DropdownMenu.Group>
                                     {#each allTopics.sort((a, b) => a.rowIdx - b.rowIdx) as targetTopic}
                                         <DropdownMenu.Item
-                                            class={[hoverColorBgMap[targetTopic.color], "break-words max-w-[200px] data-highlighted:text-pastel-foreground"]}
+                                            class={[hoverColorBgMap[targetTopic.color], "wrap-break-word max-w-[200px] data-highlighted:text-pastel-foreground"]}
                                             onclick={() => moveToTopic(targetTopic)}
                                             disabled={targetTopic.id === note.topicId}
                                         >
@@ -317,39 +370,40 @@
             <div class="flex flex-col gap-0.5">
                 <div class="flex items-end justify-between gap-1">
                     <span class="text-sm text-muted-foreground">Note:</span>
-                    <Dialog bind:open={editContentDialogOpen}>
-                        <DialogTrigger
-                            class={[buttonVariants({ variant: "ghost", size: "icon-sm" })]}
-                            title="Edit Note Content"
-                        >
-                            <Pencil class="size-3.5"/>
-                        </DialogTrigger>
-                        <DialogContent noOverlay class="w-[500px]">
-                            <DialogTitle>Edit Note Content</DialogTitle>
-                            <div class="flex flex-col gap-2 mt-2">
-                                <Label for="editNoteContent">Note:</Label>
-                                <Textarea
-                                    bind:value={editNoteContent}
-                                    name="editNoteContent"
-                                    id="editNoteContent"
-                                    placeholder="Note content..."
-                                    class="min-h-[120px]"
-                                    required
-                                />
-                            </div>
-                            <DialogFooter>
-                                <DialogClose class={buttonVariants({ variant: "ghost" })}>
-                                    Cancel
-                                </DialogClose>
-                                <Button onclick={saveNoteContent} disabled={!editNoteContent.trim()}>Save</Button>
-                            </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
+                    {#if isNoteCreator}
+                        <Dialog bind:open={editContentDialogOpen}>
+                            <DialogTrigger
+                                class={[buttonVariants({ variant: "ghost", size: "icon-sm" })]}
+                                title="Edit Note Content"
+                            >
+                                <Pencil class="size-3.5"/>
+                            </DialogTrigger>
+                            <DialogContent noOverlay class="w-[500px]">
+                                <DialogTitle>Edit Note Content</DialogTitle>
+                                <div class="flex flex-col gap-2 mt-2">
+                                    <Label for="editNoteContent">Note:</Label>
+                                    <Textarea
+                                        bind:value={editNoteContent}
+                                        name="editNoteContent"
+                                        id="editNoteContent"
+                                        placeholder="Note content..."
+                                        class="min-h-[120px]"
+                                        required
+                                    />
+                                </div>
+                                <DialogFooter>
+                                    <DialogClose class={buttonVariants({ variant: "ghost" })}>
+                                        Cancel
+                                    </DialogClose>
+                                    <Button onclick={saveNoteContent} disabled={!editNoteContent.trim()}>Save</Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
+                    {/if}
                 </div>
                 <div class="w-full h-px bg-border mb-1"></div>
                 <span class="wrap-break-word">{note.notes}</span>
-                <!-- TODO: add createdBy in comment ... refers to a user -->
-                <span class="text-xs text-end text-muted-foreground">- Todo</span>
+                <span class="text-xs text-end text-muted-foreground">- {note.createdBy?.name ?? 'Unknown'}</span>
             </div>
          
 
@@ -365,10 +419,26 @@
                 <ScrollArea class="space-y-2 max-h-64 w-full rounded-md border">
                     {#each note.comments as comment}
                         <div class="border border-border rounded-md flex flex-col p-1.5 m-1.5">
-                            <span class="break-words">{comment.content}</span>
-
-                            <!-- TODO: add createdBy in comment ... refers to a user -->
-                            <span class="text-xs text-end text-muted-foreground">- Todo</span>
+                            <span class="wrap-break-word">{comment.content}</span>
+                            <div class="flex justify-between items-center mt-1">
+                                <span class="text-xs text-muted-foreground">- {comment.createdBy?.name ?? 'Unknown'}</span>
+                                {#if currentUser?.id === comment.createdById}
+                                    <div class="flex gap-0.5">
+                                        <Button size="icon-sm" variant="ghost" title="Edit Comment" onclick={() => openEditComment(comment)}>
+                                            <Pencil class="size-3"/>
+                                        </Button>
+                                        <Button size="icon-sm" variant="ghost" title="Delete Comment" onclick={() => openDeleteComment(comment)}>
+                                            <Trash2 class="size-3 text-destructive"/>
+                                        </Button>
+                                    </div>
+                                {/if}
+                            </div>
+                            <div class="flex gap-1.5 mt-1 flex-wrap">
+                                <span class="text-xs text-muted-foreground">Posted: {formatDate(new Date(comment.createdAt))}</span>
+                                {#if comment.updatedAt && new Date(comment.updatedAt).getTime() !== new Date(comment.createdAt).getTime()}
+                                    <span class="text-xs text-muted-foreground">| Edited: {formatDate(new Date(comment.updatedAt))}</span>
+                                {/if}
+                            </div>
                         </div>
                     {/each}
                 </ScrollArea>
@@ -380,10 +450,45 @@
                 </div>
             </div>
 
-            <div class="flex gap-1.5 mt-3">
-                <!-- TODO: add time , not just date -->
-                <span class="text-xs text-muted-foreground">Posted: {formatDate(new Date(note.createdAt))},</span>
-                <span class="text-xs text-muted-foreground">Edited: {formatDate(new Date(note.updatedAt))}</span>
+            <!-- Edit Comment Dialog -->
+            <Dialog bind:open={isEditCommentOpen}>
+                <DialogContent noOverlay class="w-[450px]">
+                    <DialogTitle>Edit Comment</DialogTitle>
+                    <div class="flex flex-col gap-2 mt-2">
+                        <Label for="editCommentContent">Comment:</Label>
+                        <Textarea
+                            bind:value={editCommentContent}
+                            name="editCommentContent"
+                            id="editCommentContent"
+                            placeholder="Comment..."
+                            class="min-h-[100px]"
+                            required
+                        />
+                    </div>
+                    <DialogFooter>
+                        <DialogClose class={buttonVariants({ variant: "ghost" })}>Cancel</DialogClose>
+                        <Button onclick={saveCommentContent} disabled={!editCommentContent.trim()}>Save</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <!-- Delete Comment AlertDialog -->
+            <AlertDialog bind:open={isDeleteCommentOpen}>
+                <AlertDialogContent noOverlay class="w-[400px]">
+                    <AlertDialogTitle>Delete Comment?</AlertDialogTitle>
+                    <span>Are you sure you want to delete this comment?</span>
+                    <AlertDialogFooter>
+                        <DialogClose class={buttonVariants({ variant: "ghost" })}>Cancel</DialogClose>
+                        <Button onclick={deleteComment}>Confirm</Button>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <div class="flex gap-1.5 mt-3 flex-wrap">
+                <span class="text-xs text-muted-foreground">Posted: {formatDate(new Date(note.createdAt))}</span>
+                {#if new Date(note.updatedAt).getTime() !== new Date(note.createdAt).getTime()}
+                    <span class="text-xs text-muted-foreground">| Edited: {formatDate(new Date(note.updatedAt))}</span>
+                {/if}
             </div>
         </div>
         <DialogFooter>

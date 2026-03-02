@@ -6,11 +6,13 @@ export const createNewComment = command(
 	z.object({
 		noteId: z.string(),
 		content: z.string(),
+		createdById: z.string().optional(),
 	}),
 	async (input) => {
 		await createComment({
 			noteId: input.noteId,
 			content: input.content,
+			createdById: input.createdById,
 		});
 	}
 );

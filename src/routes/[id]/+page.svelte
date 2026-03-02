@@ -1,10 +1,11 @@
 <script lang="ts">
-	import { NotebookPen, Palette, Pencil, Plus, StickyNote, Trash2 } from '@lucide/svelte';
+	import { NotebookPen, Palette, Pencil, Plus, StickyNote, Trash2, LogIn, LogOut } from '@lucide/svelte';
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import type { PageProps } from './$types';
 	import Button, { buttonVariants } from '$lib/components/ui/button/button.svelte';
     import { createNewTopic as createNewTopicApi } from '$lib/remote-functions/topic.remote';
     import { createNewNoteCategory, updateNoteCategoryName, updateNoteCategoryColor, deleteNoteCategoryById } from '$lib/remote-functions/noteCategory.remote';
+    import { signIn } from '$lib/remote-functions/scrumSessionUser.remote';
 	import { Dialog, DialogFooter } from '$lib/components/ui/dialog';
 	import DialogTitle from '$lib/components/ui/dialog/dialog-title.svelte';
 	import { Label } from '$lib/components/ui/label';
@@ -15,14 +16,75 @@
     import { toast } from "svelte-sonner";
 	import { invalidateAll } from '$app/navigation';
 	import Topic from '$lib/components/Topic.svelte';
-	import type { ColorOption, NoteCategory } from '$lib/types';
+	import type { ColorOption, NoteCategory, SignedInUser } from '$lib/types';
 	import TopicColorSwitches from '$lib/components/TopicColorSwitches.svelte';
-	import NoteCategorySwitches from '$lib/components/NoteCategorySwitches.svelte';
 	import { AlertDialog, AlertDialogContent, AlertDialogFooter, AlertDialogTitle } from '$lib/components/ui/alert-dialog';
 	import { hoverColorBgMap } from '$lib/consts';
+	import { browser } from '$app/environment';
 
     let { data }: PageProps = $props();
     let scrumSession = $derived(data.session);
+
+    // Sign-in state
+    let currentUser = $state<SignedInUser | undefined>();
+    let isSignedIn = $derived(!!currentUser);
+
+    // Load user from users' browser sessionStorage on mount
+    $effect(() => {
+        if (browser) {
+            const stored = sessionStorage.getItem(`user-${scrumSession.id}`);
+            if (stored) {
+                try {
+                    currentUser = JSON.parse(stored);
+                } catch {
+                    sessionStorage.removeItem(`user-${scrumSession.id}`);
+                }
+            }
+        }
+    });
+
+    // Sign-in form state
+    let signInName = $state('');
+    let signInPassword = $state('');
+    let signInLoading = $state(false);
+
+    async function handleSignIn() {
+        if (!signInName.trim()) {
+            toast.error("Name is required!");
+            return;
+        }
+
+        signInLoading = true;
+        try {
+            const result = await signIn({
+                scrumSessionId: scrumSession.id,
+                name: signInName.trim(),
+                password: signInPassword || undefined
+            });
+
+            if (result.success && result.user) {
+                currentUser = result.user;
+                sessionStorage.setItem(`user-${scrumSession.id}`, JSON.stringify(result.user));
+                toast.success(`Signed in as ${result.user.name}`);
+                signInName = '';
+                signInPassword = '';
+                invalidateAll();
+            } else {
+                toast.error(result.error || "Sign in failed");
+            }
+        } catch (e) {
+            console.error("Failed to sign in:", e);
+            toast.error("Failed to sign in");
+        } finally {
+            signInLoading = false;
+        }
+    }
+
+    function handleSignOut() {
+        currentUser = undefined;
+        sessionStorage.removeItem(`user-${scrumSession.id}`);
+        toast.success("Signed out");
+    }
 
     let newTopicName = $state<string | undefined>();
     async function createNewTopic() {
@@ -147,11 +209,45 @@
     }
 </script>
 
+<div class="relative flex flex-col items-center gap-8 py-4 w-screen p-4">
+    <!-- Sign In Section -->
+    {#if !isSignedIn}
+        <div class="absolute z-110 top-2 flex flex-col gap-4 border border-border rounded-md bg-card p-6 w-full max-w-md">
+            <h2 class="text-lg font-bold text-center">Sign In to the Easy-Scrum Board</h2>
+            <p class="text-sm text-muted-foreground text-center">Enter your name to join the session. Password is optional.</p>
 
-<div class="flex flex-col items-center gap-8 py-4 w-screen p-4">
+            <div class="flex flex-col gap-3">
+                <div class="flex flex-col gap-1.5">
+                    <Label for="signInName">Name</Label>
+                    <Input
+                        bind:value={signInName}
+                        id="signInName"
+                        placeholder="Your name..."
+                        required
+                        onkeydown={(e: KeyboardEvent) => e.key === 'Enter' && handleSignIn()}
+                    />
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <Label for="signInPassword">Password (optional)</Label>
+                    <Input
+                        bind:value={signInPassword}
+                        id="signInPassword"
+                        type="password"
+                        placeholder="Optional password..."
+                        onkeydown={(e: KeyboardEvent) => e.key === 'Enter' && handleSignIn()}
+                    />
+                    <span class="text-xs text-muted-foreground">If set, only you can sign in with this name</span>
+                </div>
+                <Button onclick={handleSignIn} disabled={signInLoading || !signInName.trim()} class="mt-2">
+                    {signInLoading ? 'Signing in...' : 'Sign In'}
+                    <LogIn class="size-4"/>
+                </Button>
+            </div>
+        </div>
+    {/if}
 
     <!-- Scrum Board-->
-    <div class="flex flex-col gap-2 border border-border rounded-md bg-card min-w-xl max-w-full overflow-x-scroll">
+    <div class={["flex flex-col gap-2 border border-border rounded-md bg-card min-w-xl max-w-full overflow-x-scroll", !isSignedIn && "opacity-50 pointer-events-none select-none"]}>
         <div class="sticky top-0 left-0 z-10">
             <div class="relative flex justify-center items-center border-b border-border px-2 py-3">
                 <Dialog bind:open={createTopicDialogOpen}>
@@ -286,7 +382,7 @@
         {#if scrumSession.topics.length}
             <div class="flex flex-wrap justify-center gap-3 p-5 max-w-6xl">
                 {#each scrumSession.topics.sort((a, b) => a.rowIdx - b.rowIdx) as topic}
-                    <Topic {topic} allTopics={scrumSession.topics} noteCategories={scrumSession.noteCategories}/>
+                    <Topic {topic} allTopics={scrumSession.topics} noteCategories={scrumSession.noteCategories} {currentUser}/>
                 {/each}
             </div>
         {:else}
@@ -298,6 +394,17 @@
             </div>
         {/if}
     </div>
+
+    {#if isSignedIn}
+        <!-- Signed in indicator -->
+        <div class="flex items-center gap-3 border border-border rounded-md bg-card px-4 py-2">
+            <span class="text-sm">Signed in as <strong>{currentUser?.name}</strong></span>
+            <Button variant="ghost" size="sm" onclick={handleSignOut}>
+                Sign Out
+                <LogOut class="size-4"/>
+            </Button>
+        </div>
+    {/if}
 </div>
 
 

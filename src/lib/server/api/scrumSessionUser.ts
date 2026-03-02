@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { db } from '../db';
 import { scrumSessionUser, scrumSession } from '../db/schema';
 
@@ -27,6 +27,14 @@ export async function getScrumSessionUserById(id: string) {
 	const user = await db.query.scrumSessionUser.findFirst({
 		where: { id }
 	});
+	return user ?? null;
+}
+
+export async function getScrumSessionUserByName(scrumSessionId: string, name: string) {
+	const [user] = await db
+		.select()
+		.from(scrumSessionUser)
+		.where(and(eq(scrumSessionUser.scrumSessionId, scrumSessionId), eq(scrumSessionUser.name, name)));
 	return user ?? null;
 }
 

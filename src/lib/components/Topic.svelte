@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { ColorOption, NoteCategory, Topic } from "$lib/types";
+	import type { ColorOption, NoteCategory, Topic, SignedInUser } from "$lib/types";
 	import { ChevronsLeft, ChevronsRight, Pencil, Plus, Trash2, Palette } from "@lucide/svelte";
 	import { Button, buttonVariants } from "./ui/button";
 	import Note from "./Note.svelte";
@@ -20,8 +20,9 @@
         topic: Topic
         allTopics: Topic[];
         noteCategories: NoteCategory[];
+        currentUser?: SignedInUser;
     }
-    let { topic, allTopics, noteCategories }: Props = $props();
+    let { topic, allTopics, noteCategories, currentUser }: Props = $props();
     let topicsLength = $derived(allTopics.length);
 
 
@@ -120,6 +121,7 @@
                 header: newNoteTitle.trim(),
                 notes: newNote.trim(),
                 noteCategoryId: newNoteCategoryId,
+                createdById: currentUser?.id,
                 colIdx: topic.notes.length,
             });
             isNewNoteOpen = false;
@@ -165,9 +167,7 @@
     }
 </script>
 
-     
-<!-- colorBgMap[topic.color] -->
-<div class={["flex flex-col rounded-md border-2 min-w-[360px] max-w-[360px] min-h-[250px] text-card-foreground overflow-hidden", "bg-card", colorBorderMap[topic.color]]}>
+<div class={["flex flex-col rounded-md border-2 min-w-[360px] max-w-[360px] min-h-[250px] text-card-foreground overflow-hidden bg-card", colorBorderMap[topic.color]]}>
     <div
         class={["flex items-center justify-between px-1 py-1", colorBgMap[topic.color]]}
         onmouseenter={() => isHoveringTitle = true}
@@ -318,7 +318,7 @@
     <div class="flex flex-col gap-4 px-4 py-4.5">
         {#if topic.notes.length}
             {#each topic.notes.sort((a, b) => a.colIdx - b.colIdx) as note}
-                <Note {note} allNotes={topic.notes} {allTopics} {noteCategories}/>
+                <Note {note} allNotes={topic.notes} {allTopics} {noteCategories} {currentUser}/>
             {/each}
         {:else}
             <div class="flex flex-col gap-1 px-4 mt-4">

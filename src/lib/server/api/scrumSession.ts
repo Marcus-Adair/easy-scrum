@@ -37,8 +37,13 @@ export async function getScrumSessionById(id: string) {
 				with: {
 					notes: {
 						with: {
-							comments: true,
-							noteCategory: true
+							comments: {
+								with: {
+									createdBy: true
+								}
+							},
+							noteCategory: true,
+							createdBy: true
 						}
 					}
 				}

@@ -7,6 +7,7 @@ export type CreateNoteInput = {
 	notes?: string;
 	topicId: string;
 	noteCategoryId?: string;
+	createdById?: string;
 	colIdx: number;
 };
 

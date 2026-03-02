@@ -8,6 +8,7 @@ export const createNewNote = command(
       header: z.string(),
       notes: z.string().optional(),
       noteCategoryId: z.string().optional(),
+      createdById: z.string().optional(),
       colIdx: z.number(),
     }),
     async (input) => {
@@ -16,6 +17,7 @@ export const createNewNote = command(
         header: input.header,
         notes: input.notes,
         noteCategoryId: input.noteCategoryId,
+        createdById: input.createdById,
         colIdx: input.colIdx,
       });
     }

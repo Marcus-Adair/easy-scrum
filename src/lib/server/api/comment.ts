@@ -5,6 +5,7 @@ import { comment, note } from '../db/schema';
 export type CreateCommentInput = {
 	content: string;
 	noteId: string;
+	createdById?: string;
 };
 
 export type UpdateCommentInput = {

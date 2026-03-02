@@ -249,21 +249,9 @@
 /* Sticky note folded corner effect */
 .sticky-note {
 	position: relative;
+	/* Use clip-path to actually cut off the corner - no color matching needed */
+	clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 0 100%);
 }
-
-.sticky-note::before {
-	content: '';
-	position: absolute;
-	top: 0;
-	right: 0;
-	width: 0;
-	height: 0;
-	border-style: solid;
-	border-width: 0 20px 20px 0;
-	border-color: transparent var(--card) transparent transparent;
-	z-index: 1;
-}
-
 .sticky-note::after {
 	content: '';
 	position: absolute;
@@ -271,6 +259,9 @@
 	right: 0;
 	width: 20px;
 	height: 20px;
-	background: linear-gradient(225deg, transparent 50%, rgba(0, 0, 0, 0.1) 50%);
+	/* Fold shadow effect */
+	background: linear-gradient(225deg, transparent 50%, rgba(0, 0, 0, 0.12) 50%);
 	z-index: 2;
+	/* Ensure the fold shadow scales properly with the note */
+	transform-origin: top right;
 }

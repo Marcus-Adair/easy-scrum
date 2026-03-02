@@ -1,4 +1,6 @@
 export type ColorOption = "pink" | "yellow" | "blue" | "orange" | "salmon" | "red" | "green" | "white" | "purple"
+
+export type SignedInUser = { id: string; name: string; hasPassword: boolean };
   
 export interface User {
     id: string;
@@ -35,8 +37,10 @@ export interface Note {
     notes: string | null;
     topicId: string;
     noteCategoryId: string | null;
+    createdById: string | null;
     colIdx: number;
     noteCategory: NoteCategory | null;
+    createdBy: User | null;
     comments: Comment[];
     createdAt: Date;
     updatedAt: Date;
@@ -46,6 +50,8 @@ export interface Comment {
     id: string;
     content: string;
     noteId: string;
+    createdById: string | null;
+    createdBy: User | null;
     createdAt: Date;
     updatedAt: Date;
 }

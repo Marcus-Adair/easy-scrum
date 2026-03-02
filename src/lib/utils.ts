@@ -13,13 +13,21 @@ export type WithoutChildrenOrChild<T> = WithoutChildren<WithoutChild<T>>;
 export type WithElementRef<T, U extends HTMLElement = HTMLElement> = T & { ref?: U | null };
 
 
-// 
+//
 export function formatDate(date: Date): string {
-	return date.toLocaleDateString('en-US', {
+	const dateStr = date.toLocaleDateString('en-US', {
 	  month: 'short',
 	  day: 'numeric',
 	  year: 'numeric'
 	}).replace(/(\w{3})/, '$1.');
+
+	const timeStr = date.toLocaleTimeString('en-US', {
+	  hour: 'numeric',
+	  minute: '2-digit',
+	  hour12: true
+	});
+
+	return `${dateStr} ${timeStr}`;
 }
 
 export function upperCaseFirstLetter(value: string): string {

@@ -59,6 +59,7 @@ export const note = pgTable('note', {
 		.notNull()
 		.references(() => topic.id),
 	noteCategoryId: uuid('note_category_id').references(() => noteCategory.id),
+	createdById: uuid('created_by_id').references(() => scrumSessionUser.id),
 	colIdx: integer('col_idx').notNull(),
 	createdAt: timestamp('created_at').defaultNow().notNull(),
 	updatedAt: timestamp('updated_at').defaultNow().notNull()
@@ -70,6 +71,7 @@ export const comment = pgTable('comment', {
 	noteId: uuid('note_id')
 		.notNull()
 		.references(() => note.id),
+	createdById: uuid('created_by_id').references(() => scrumSessionUser.id),
 	createdAt: timestamp('created_at').defaultNow().notNull(),
 	updatedAt: timestamp('updated_at').defaultNow().notNull()
 });
@@ -112,12 +114,20 @@ export const relations = defineRelations(
 				from: r.note.noteCategoryId,
 				to: r.noteCategory.id
 			}),
+			createdBy: r.one.scrumSessionUser({
+				from: r.note.createdById,
+				to: r.scrumSessionUser.id
+			}),
 			comments: r.many.comment()
 		},
 		comment: {
 			note: r.one.note({
 				from: r.comment.noteId,
 				to: r.note.id
+			}),
+			createdBy: r.one.scrumSessionUser({
+				from: r.comment.createdById,
+				to: r.scrumSessionUser.id
 			})
 		}
 	})
