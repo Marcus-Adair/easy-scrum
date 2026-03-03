@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { NotebookPen, Palette, Pencil, Plus, StickyNote, Trash2, LogIn, LogOut } from '@lucide/svelte';
+	import { NotebookPen, Palette, Pencil, Plus, StickyNote, Trash2, LogIn, LogOut, Link, Check } from '@lucide/svelte';
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import type { PageProps } from './$types';
 	import Button, { buttonVariants } from '$lib/components/ui/button/button.svelte';
@@ -46,7 +46,6 @@
     // Sign-in form state
     let signInName = $state('');
     let signInPassword = $state('');
-    let signInLoading = $state(false);
 
     async function handleSignIn() {
         if (!signInName.trim()) {
@@ -54,7 +53,6 @@
             return;
         }
 
-        signInLoading = true;
         try {
             const result = await signIn({
                 scrumSessionId: scrumSession.id,
@@ -75,8 +73,6 @@
         } catch (e) {
             console.error("Failed to sign in:", e);
             toast.error("Failed to sign in");
-        } finally {
-            signInLoading = false;
         }
     }
 
@@ -84,6 +80,20 @@
         currentUser = undefined;
         sessionStorage.removeItem(`user-${scrumSession.id}`);
         toast.success("Signed out");
+    }
+
+    // Copy URL to clipboard
+    let justCopied = $state(false);
+    async function copyUrl() {
+        if (!browser) return;
+        try {
+            await navigator.clipboard.writeText(window.location.href);
+            justCopied = true;
+            toast.success("Link copied to clipboard!");
+            setTimeout(() => justCopied = false, 2000);
+        } catch {
+            toast.error("Failed to copy link");
+        }
     }
 
     let newTopicName = $state<string | undefined>();
@@ -209,12 +219,17 @@
     }
 </script>
 
+<svelte:head>
+	<title>{scrumSession.name} | Easy-Scrum</title>
+</svelte:head>
+
 <div class="relative flex flex-col items-center gap-8 py-4 w-screen p-4">
     <!-- Sign In Section -->
     {#if !isSignedIn}
         <div class="absolute z-110 top-2 flex flex-col gap-4 border border-border rounded-md bg-card p-6 w-full max-w-md">
-            <h2 class="text-lg font-bold text-center">Sign In to the Easy-Scrum Board</h2>
-            <p class="text-sm text-muted-foreground text-center">Enter your name to join the session. Password is optional.</p>
+            <h2 class="text-2xl text-center font-extrabold font-serif text-primary">Sign In to the Easy-Scrum Board</h2>
+            <p class="text-sm text-muted-foreground text-left">Enter your name to join the session. Password is optional.</p>
+            <p class="text-sm text-muted-foreground text-left">Notes and comments can only be edited and deleted by their creator.</p>
 
             <div class="flex flex-col gap-3">
                 <div class="flex flex-col gap-1.5">
@@ -236,10 +251,9 @@
                         placeholder="Optional password..."
                         onkeydown={(e: KeyboardEvent) => e.key === 'Enter' && handleSignIn()}
                     />
-                    <span class="text-xs text-muted-foreground">If set, only you can sign in with this name</span>
                 </div>
-                <Button onclick={handleSignIn} disabled={signInLoading || !signInName.trim()} class="mt-2">
-                    {signInLoading ? 'Signing in...' : 'Sign In'}
+                <Button onclick={handleSignIn} disabled={!signInName.trim()} class="mt-4">
+                    Sign In
                     <LogIn class="size-4"/>
                 </Button>
             </div>
@@ -249,7 +263,23 @@
     <!-- Scrum Board-->
     <div class={["flex flex-col gap-2 border border-border rounded-md bg-card min-w-xl max-w-full overflow-x-scroll", !isSignedIn && "opacity-50 pointer-events-none select-none"]}>
         <div class="sticky top-0 left-0 z-10">
-            <div class="relative flex justify-center items-center border-b border-border px-2 py-3">
+            <div class="relative flex justify-center border-b border-border px-2 pt-3 pb-1.5">
+                <div class="flex flex-col items-center">
+                
+                    <!-- SCRUM NAME!!!!! -->
+                    <h1 class="text-primary font-extrabold text-2xl font-serif">{scrumSession.name}</h1>
+
+                    <Button variant="ghost" size="sm" onclick={copyUrl} class="text-xs text-muted-foreground hover:text-muted-foreground hover:bg-accent/30! h-5.5 my-0.5">
+                        {#if justCopied}
+                            Share Link to Collaborate!
+                            <Check class="size-3 text-green-600"/>
+                        {:else}
+                            Copy Link
+                            <Link class="size-3"/>
+                        {/if}
+                    </Button>
+                </div>
+
                 <Dialog bind:open={createTopicDialogOpen}>
                     <DialogTrigger class={["absolute right-5", buttonVariants({ variant: "outline", size: "sm" })]} title="Create Topic">
                         Create Topic
@@ -273,11 +303,10 @@
 
                         <DialogFooter>
                             <DialogClose class={buttonVariants({ variant: "outline" })}>Cancel</DialogClose>
-                            <Button onclick={ () =>  createNewTopic()} disabled={!newTopicColor}>Create</Button>
+                            <Button onclick={ () =>  createNewTopic()} disabled={!newTopicColor || !newTopicName?.trim()}>Create</Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
-                <h1 class="text-primary font-bold text-lg mb-1">{scrumSession.name}</h1>
                 <DropdownMenu.Root>
                     <DropdownMenu.Trigger
                         class={["absolute left-5", buttonVariants({ variant: "outline", size: "sm" })]}
@@ -369,7 +398,7 @@
                 <AlertDialog bind:open={isDeleteCategoryOpen}>
                     <AlertDialogContent>
                         <AlertDialogTitle>Delete Category?</AlertDialogTitle>
-                        <span>Are you sure you want to delete "{editingCategory?.categoryName}"? Notes using this category will lose their category assignment.</span>
+                        <span>Are you sure you want to delete "{editingCategory?.categoryName}"? Note: you will not be able to delete this category if there are notes using it.</span>
                         <AlertDialogFooter>
                             <DialogClose class={buttonVariants({ variant: "outline" })}>Cancel</DialogClose>
                             <Button onclick={deleteCategory}>Confirm</Button>
@@ -395,16 +424,19 @@
         {/if}
     </div>
 
-    {#if isSignedIn}
-        <!-- Signed in indicator -->
-        <div class="flex items-center gap-3 border border-border rounded-md bg-card px-4 py-2">
-            <span class="text-sm">Signed in as <strong>{currentUser?.name}</strong></span>
-            <Button variant="ghost" size="sm" onclick={handleSignOut}>
-                Sign Out
-                <LogOut class="size-4"/>
-            </Button>
-        </div>
-    {/if}
+    <div class="flex items-center gap-3 flex-wrap justify-center">
+        {#if isSignedIn}
+            <!-- Signed in indicator -->
+            <div class="flex flex-col items-center gap-1.5 border border-border rounded-md bg-card px-4 py-2">
+                <span class="text-sm font-light">Signed in as <strong class="font-bold">{currentUser?.name}</strong></span>
+                <div class="h-px bg-border w-full"></div>
+                <Button variant="ghost" size="sm" class="h-6.5" onclick={handleSignOut}>
+                    Sign Out
+                    <LogOut class="size-4"/>
+                </Button>
+            </div>
+        {/if}
+    </div>
 </div>
 
 

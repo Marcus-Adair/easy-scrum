@@ -1,6 +1,9 @@
 import { command } from '$app/server';
 import { createScrumSessionUser, getScrumSessionUserByName } from '$lib/server/api';
+import bcrypt from 'bcrypt';
 import z from 'zod';
+
+const SALT_ROUNDS = 10;
 
 export const signIn = command(
 	z.object({
@@ -15,7 +18,11 @@ export const signIn = command(
 			// User exists - check password
 			if (existingUser.password) {
 				// User has a password, verify it
-				if (input.password !== existingUser.password) {
+				if (!input.password) {
+					return { success: false, error: 'Password required' };
+				}
+				const passwordMatch = await bcrypt.compare(input.password, existingUser.password);
+				if (!passwordMatch) {
 					return { success: false, error: 'Incorrect password' };
 				}
 			}
@@ -30,11 +37,15 @@ export const signIn = command(
 			};
 		}
 
-		// User doesn't exist - create them
+		// User doesn't exist - create them with hashed password
+		const hashedPassword = input.password
+			? await bcrypt.hash(input.password, SALT_ROUNDS)
+			: undefined;
+
 		const newUser = await createScrumSessionUser({
 			scrumSessionId: input.scrumSessionId,
 			name: input.name,
-			password: input.password || undefined
+			password: hashedPassword
 		});
 
 		return {

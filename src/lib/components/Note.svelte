@@ -30,6 +30,10 @@
     let notesLength = $derived(allNotes.length);
     let isNoteCreator = $derived(currentUser?.id === note.createdById);
 
+    // Shift constraints - can't shift past boundaries
+    let canShiftUp = $derived(note.colIdx > 0);
+    let canShiftDown = $derived(note.colIdx < notesLength - 1);
+
     // Modal stuff
     let isNoteModalOpen = $state(false);
     let noteDiv: HTMLDivElement;
@@ -63,7 +67,7 @@
             return;
         }
         try {
-            await updateNoteHeader({ id: note.id, header: editNoteHeader.trim() });
+            await updateNoteHeader({ id: note.id, header: editNoteHeader.trim(), userId: currentUser!.id });
             isEditNameOpen = false;
             invalidateAll();
         } catch (e) {
@@ -88,7 +92,7 @@
             return;
         }
         try {
-            await updateNoteContent({ id: note.id, notes: editNoteContent.trim() });
+            await updateNoteContent({ id: note.id, notes: editNoteContent.trim(), userId: currentUser!.id });
             editContentDialogOpen = false;
             invalidateAll();
         } catch (e) {
@@ -101,7 +105,7 @@
     let isDeleteNoteOpen = $state(false);
     async function deleteNote() {
         try {
-            await deleteNoteById({ id: note.id });
+            await deleteNoteById({ id: note.id, userId: currentUser!.id });
             isDeleteNoteOpen = false;
             isNoteModalOpen = false;
             invalidateAll();
@@ -122,7 +126,7 @@
     });
     async function saveNoteCategory() {
         try {
-            await updateNoteCategory({ id: note.id, noteCategoryId: editNoteCategoryId ?? null });
+            await updateNoteCategory({ id: note.id, noteCategoryId: editNoteCategoryId ?? null, userId: currentUser!.id });
             isEditCategoryOpen = false;
             invalidateAll();
             toast.success("Category updated");
@@ -164,7 +168,7 @@
             return;
         }
         try {
-            await updateCommentContent({ id: editingComment.id, content: editCommentContent.trim() });
+            await updateCommentContent({ id: editingComment.id, content: editCommentContent.trim(), userId: currentUser!.id });
             isEditCommentOpen = false;
             editingComment = null;
             invalidateAll();
@@ -185,7 +189,7 @@
     async function deleteComment() {
         if (!deletingComment) return;
         try {
-            await deleteCommentById({ id: deletingComment.id });
+            await deleteCommentById({ id: deletingComment.id, userId: currentUser!.id });
             isDeleteCommentOpen = false;
             deletingComment = null;
             invalidateAll();
@@ -196,33 +200,39 @@
         }
     }
 
-    async function shiftNotesUp() {
-        // Circular shift up: each note's index decreases by 1, first wraps to last
-        const updates = allNotes.map(n => ({
-            id: n.id,
-            colIdx: (n.colIdx - 1 + notesLength) % notesLength
-        }));
+    async function shiftNoteUp() {
+        if (!canShiftUp) return;
+        // Swap with the note above (colIdx - 1)
+        const noteAbove = allNotes.find(n => n.colIdx === note.colIdx - 1);
+        if (!noteAbove) return;
+        const updates = [
+            { id: note.id, colIdx: note.colIdx - 1 },
+            { id: noteAbove.id, colIdx: note.colIdx }
+        ];
         try {
             await shiftNoteColIndices({ updates });
             invalidateAll();
         } catch (e) {
-            console.error("Failed to shift notes:", e);
-            toast.error("Failed to shift notes");
+            console.error("Failed to shift note:", e);
+            toast.error("Failed to shift note");
         }
     }
 
-    async function shiftNotesDown() {
-        // Circular shift down: each note's index increases by 1, last wraps to first
-        const updates = allNotes.map(n => ({
-            id: n.id,
-            colIdx: (n.colIdx + 1) % notesLength
-        }));
+    async function shiftNoteDown() {
+        if (!canShiftDown) return;
+        // Swap with the note below (colIdx + 1)
+        const noteBelow = allNotes.find(n => n.colIdx === note.colIdx + 1);
+        if (!noteBelow) return;
+        const updates = [
+            { id: note.id, colIdx: note.colIdx + 1 },
+            { id: noteBelow.id, colIdx: note.colIdx }
+        ];
         try {
             await shiftNoteColIndices({ updates });
             invalidateAll();
         } catch (e) {
-            console.error("Failed to shift notes:", e);
-            toast.error("Failed to shift notes");
+            console.error("Failed to shift note:", e);
+            toast.error("Failed to shift note");
         }
     }
 
@@ -248,20 +258,18 @@
     <DialogTrigger title="See/Edit Note">
         <div
             bind:this={noteDiv}
-            class={["sticky-note flex flex-col gap-2 cursor-pointer transition-all duration-150 ease-in", scaleNote && "scale-[1.025]", noteRotation, "text-pastel-foreground", colorBgMap[note.noteCategory?.color!]]}
+            class={["sticky-note flex flex-col gap-2 cursor-pointer transition-all duration-150 ease-in", scaleNote && "scale-[1.025]", noteRotation, "text-pastel-foreground", colorBgMap[note.noteCategory?.color ?? 'yellow']]}
             onmouseenter={hoverNote}
             onmouseleave={stopHoverNote}
             role="banner"
         >
             <div class="flex flex-col">
-                <span class="pt-2 px-3 text-start wrap-break-word font-semibold">{note.header}</span>
-
-                <!-- <div class={["w-full h-[2px]", colorBorderBgMap[note.noteCategory?.color!]]}></div> -->
+                <span class="pt-2 px-3 text-start wrap-break-word font-semibold font-serif">{note.header}</span>
             </div>
-            <span class="text-sm pb-3 pt-1 px-3 text-start wrap-break-word">{note.notes}</span>
+            <span class="text-sm pb-3 pt-1 px-3 text-start wrap-break-word font-serif">{note.notes}</span>
         </div>
     </DialogTrigger>
-    <DialogContent class="overflow-hidden">
+    <DialogContent class="overflow-hidden min-w-[650px]">
         <DialogTitle class="w-full overflow-hidden">
                 <div class="flex flex-col gap-2 w-full">
                     <span class="break-all">{note.header}</span>
@@ -336,16 +344,21 @@
                                     </AlertDialogContent>
                                 </AlertDialog>
                             {/if}
-                        {#if notesLength > 1}
-                            <Button size="icon" variant="ghost" title="Shift Note Up" onclick={shiftNotesUp}><ChevronsUp class="size-4"/></Button>
-                            <Button size="icon" variant="ghost" title="Shift Note Down" onclick={shiftNotesDown}><ChevronsDown class="size-4"/></Button>
+                        {#if canShiftUp}
+                            <DialogClose class={buttonVariants({ variant: "ghost", size: "icon" })} title="Shift Note Up" onclick={shiftNoteUp}><ChevronsUp class="size-4"/></DialogClose>
+                        {/if}
+                        {#if canShiftDown}
+                            <DialogClose class={buttonVariants({ variant: "ghost", size: "icon" })} title="Shift Note Down" onclick={shiftNoteDown}><ChevronsDown class="size-4"/></DialogClose>
                         {/if}
                         <DropdownMenu.Root>
-                            <DropdownMenu.Trigger class={[buttonVariants({ variant: "ghost", size: "icon" })]} title="Move to Topic">
+                            <DropdownMenu.Trigger class={[buttonVariants({ variant: "ghost" })]} title="Move to Topic">
+                                <span class="text-xs text-muted-foreground">Move Note</span>
                                 <NotebookPen class="size-4"/>
                             </DropdownMenu.Trigger>
                             <DropdownMenu.Content>
                                 <DropdownMenu.Group>
+                                <DropdownMenu.Label>Move to Topic:</DropdownMenu.Label>
+                                <DropdownMenu.Separator />
                                     {#each allTopics.sort((a, b) => a.rowIdx - b.rowIdx) as targetTopic}
                                         <DropdownMenu.Item
                                             class={[hoverColorBgMap[targetTopic.color], "wrap-break-word max-w-[200px] data-highlighted:text-pastel-foreground"]}
@@ -360,7 +373,14 @@
                         </DropdownMenu.Root>
                         </div>
                         {#if note.noteCategory}
-                            <Badge variant={note.noteCategory.color}>{note.noteCategory.categoryName}</Badge>
+                            <Badge
+                                variant={note.noteCategory.color}
+                                onclick={() => isEditCategoryOpen = true}
+                                class="cursor-pointer"
+                                title="Note Category"
+                            >
+                                {note.noteCategory.categoryName}
+                            </Badge>
                         {/if}
                     </div>
                 </div>
@@ -411,37 +431,40 @@
             <div class="flex flex-col gap-1.5 text-sm mt-4.5">
                 <div class="flex justify-between items-end">
                     <span class="text-muted-foreground">Comments:</span>
-                    <!-- <Button size="icon-sm" variant="ghost" title="Add Comment"><MessageSquarePlus/></Button> -->
                 </div>
                 
                 <div class="w-full h-px bg-border mb-1"></div>
 
-                <ScrollArea class="space-y-2 max-h-64 w-full rounded-md border">
-                    {#each note.comments as comment}
-                        <div class="border border-border rounded-md flex flex-col p-1.5 m-1.5">
-                            <span class="wrap-break-word">{comment.content}</span>
-                            <div class="flex justify-between items-center mt-1">
-                                <span class="text-xs text-muted-foreground">- {comment.createdBy?.name ?? 'Unknown'}</span>
-                                {#if currentUser?.id === comment.createdById}
-                                    <div class="flex gap-0.5">
-                                        <Button size="icon-sm" variant="ghost" title="Edit Comment" onclick={() => openEditComment(comment)}>
-                                            <Pencil class="size-3"/>
-                                        </Button>
-                                        <Button size="icon-sm" variant="ghost" title="Delete Comment" onclick={() => openDeleteComment(comment)}>
-                                            <Trash2 class="size-3 text-destructive"/>
-                                        </Button>
-                                    </div>
-                                {/if}
+                {#if note.comments.length}
+                    <ScrollArea class="space-y-2 max-h-64 w-full rounded-md border">
+                        {#each note.comments as comment}
+                            <div class="border border-border rounded-md flex flex-col p-1.5 m-1.5">
+                                <span class="wrap-break-word">{comment.content}</span>
+                                <div class="flex justify-between items-center mt-1">
+                                    <span class="text-xs text-muted-foreground">- {comment.createdBy?.name ?? 'Unknown'}</span>
+                                    {#if currentUser?.id === comment.createdById}
+                                        <div class="flex gap-0.5">
+                                            <Button size="icon-sm" variant="ghost" title="Edit Comment" onclick={() => openEditComment(comment)}>
+                                                <Pencil class="size-3"/>
+                                            </Button>
+                                            <Button size="icon-sm" variant="ghost" title="Delete Comment" onclick={() => openDeleteComment(comment)}>
+                                                <Trash2 class="size-3 text-destructive"/>
+                                            </Button>
+                                        </div>
+                                    {/if}
+                                </div>
+                                <div class="flex gap-3 mt-1 flex-wrap text-xs text-muted-foreground">
+                                    <span>Posted: {formatDate(new Date(comment.createdAt))}</span>
+                                    {#if comment.updatedAt && new Date(comment.updatedAt).getTime() !== new Date(comment.createdAt).getTime()}
+                                        <span>|</span>
+                                        <span>Edited: {formatDate(new Date(comment.updatedAt))}</span>
+                                    {/if}
+                                </div>
                             </div>
-                            <div class="flex gap-1.5 mt-1 flex-wrap">
-                                <span class="text-xs text-muted-foreground">Posted: {formatDate(new Date(comment.createdAt))}</span>
-                                {#if comment.updatedAt && new Date(comment.updatedAt).getTime() !== new Date(comment.createdAt).getTime()}
-                                    <span class="text-xs text-muted-foreground">| Edited: {formatDate(new Date(comment.updatedAt))}</span>
-                                {/if}
-                            </div>
-                        </div>
-                    {/each}
-                </ScrollArea>
+                        {/each}
+                    </ScrollArea>
+                {/if}
+                
                 <div class="flex gap-2">
                     <Textarea bind:value={newCommentContent} placeholder="Add comment..."/>
                     <Button size="icon" variant="outline" title="Add Comment" onclick={addComment} disabled={!newCommentContent.trim()}>
@@ -484,10 +507,11 @@
                 </AlertDialogContent>
             </AlertDialog>
 
-            <div class="flex gap-1.5 mt-3 flex-wrap">
-                <span class="text-xs text-muted-foreground">Posted: {formatDate(new Date(note.createdAt))}</span>
+            <div class="flex gap-1.5 mt-3 flex-wrap text-xs text-muted-foreground">
+                <span>Posted: {formatDate(new Date(note.createdAt))}</span>
                 {#if new Date(note.updatedAt).getTime() !== new Date(note.createdAt).getTime()}
-                    <span class="text-xs text-muted-foreground">| Edited: {formatDate(new Date(note.updatedAt))}</span>
+                    <span>|</span>
+                    <span>Edited: {formatDate(new Date(note.updatedAt))}</span>
                 {/if}
             </div>
         </div>

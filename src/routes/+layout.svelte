@@ -12,14 +12,14 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
-	<title>Easy-Scrum</title>
+	<!-- <title>Easy-Scrum</title> -->
 </svelte:head>
 
 <Toaster/>
 <ModeWatcher />
 <div class="flex flex-col min-h-screen">
 	<header class="sticky top-0 z-50 shadow-xs flex border-b border-border bg-background py-2 px-4 justify-between items-center">
-		<a href="/" class="font-bold text-lg text-primary" title="Go Home">Easy-Scrum</a>
+		<a href="/" class="font-bold text-2xl text-primary font-serif" title="Go Home">Easy-Scrum</a>
 
 		<Button onclick={toggleMode} variant="outline" size="icon" title="Toggle Mode">
 			{#if mode.current === "dark"}
@@ -34,7 +34,7 @@
 		{@render children()}
 	</main>
 
-	<footer class="flex border-t border-border text-muted-foreground py-2.5 px-4 justify-between items-center">
+	<footer class="flex border-t border-border text-muted-foreground py-2.5 px-4 justify-between items-center font-serif">
 		<a
 			href="/"
 			class="text-sm hover:underline hover:underline-offset-2 hover:text-primary cursor-pointer"
@@ -46,7 +46,7 @@
 			Made with love ❤️ by
 			<a 
 				href="https://marcusadair.com/"
-				class=" hover:underline hover:underline-offset-2 hover:text-primary cursor-pointer"
+				class="hover:underline hover:underline-offset-2 hover:text-primary cursor-pointer"
 				title="Visit My Site"
 				target="_blank"
 			>

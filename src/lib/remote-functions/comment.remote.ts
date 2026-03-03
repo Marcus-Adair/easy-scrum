@@ -1,5 +1,5 @@
 import { command } from '$app/server';
-import { createComment, updateComment, deleteComment } from '$lib/server/api';
+import { createComment, updateComment, deleteComment, getCommentById } from '$lib/server/api';
 import z from 'zod';
 
 export const createNewComment = command(
@@ -21,8 +21,13 @@ export const updateCommentContent = command(
 	z.object({
 		id: z.string(),
 		content: z.string(),
+		userId: z.string(),
 	}),
 	async (input) => {
+		const comment = await getCommentById(input.id);
+		if (!comment || comment.createdById !== input.userId) {
+			throw new Error('Unauthorized: You can only edit your own comments');
+		}
 		await updateComment(input.id, { content: input.content });
 	}
 );
@@ -30,8 +35,13 @@ export const updateCommentContent = command(
 export const deleteCommentById = command(
 	z.object({
 		id: z.string(),
+		userId: z.string(),
 	}),
 	async (input) => {
+		const comment = await getCommentById(input.id);
+		if (!comment || comment.createdById !== input.userId) {
+			throw new Error('Unauthorized: You can only delete your own comments');
+		}
 		await deleteComment(input.id);
 	}
 );

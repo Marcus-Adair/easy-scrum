@@ -3,8 +3,6 @@ import { defineRelations } from 'drizzle-orm';
 
 export const colorsEnum = pgEnum("colors", ["pink", "yellow", "blue", "orange", "salmon", "red", "green", "white", "purple"]);
 
-// TODO: made things delete on cascade when i delete things
-
 // DB Schematics
 export const scrumSession = pgTable('scrum_session', {
 	id: uuid('id').primaryKey().notNull().defaultRandom(),
@@ -21,7 +19,7 @@ export const scrumSessionUser = pgTable(
 		password: varchar('password', { length: 255 }),
 		scrumSessionId: uuid('scrum_session_id')
 			.notNull()
-			.references(() => scrumSession.id),
+			.references(() => scrumSession.id, { onDelete: 'cascade' }),
 		createdAt: timestamp('created_at').defaultNow().notNull(),
 		updatedAt: timestamp('updated_at').defaultNow().notNull()
 	},
@@ -32,7 +30,7 @@ export const topic = pgTable('topic', {
 	id: uuid('id').primaryKey().notNull().defaultRandom(),
 	scrumSessionId: uuid('scrum_session_id')
 		.notNull()
-		.references(() => scrumSession.id),
+		.references(() => scrumSession.id, { onDelete: 'cascade' }),
 	topicName: varchar('topic_name', { length: 100 }).notNull(),
 	color: colorsEnum().default("yellow").notNull(),
 	rowIdx: integer('row_idx').notNull(),
@@ -44,7 +42,7 @@ export const noteCategory = pgTable('note_category', {
 	id: uuid('id').primaryKey().notNull().defaultRandom(),
 	scrumSessionId: uuid('scrum_session_id')
 		.notNull()
-		.references(() => scrumSession.id),
+		.references(() => scrumSession.id, { onDelete: 'cascade' }),
 	categoryName: varchar('category_name', { length: 50 }).notNull(),
 	color: colorsEnum().default("pink").notNull(),
 	createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -57,7 +55,7 @@ export const note = pgTable('note', {
 	notes: text('notes'),
 	topicId: uuid('topic_id')
 		.notNull()
-		.references(() => topic.id),
+		.references(() => topic.id, { onDelete: 'cascade' }),
 	noteCategoryId: uuid('note_category_id').references(() => noteCategory.id),
 	createdById: uuid('created_by_id').references(() => scrumSessionUser.id),
 	colIdx: integer('col_idx').notNull(),
@@ -70,7 +68,7 @@ export const comment = pgTable('comment', {
 	content: varchar('content', { length: 2000 }).notNull(),
 	noteId: uuid('note_id')
 		.notNull()
-		.references(() => note.id),
+		.references(() => note.id, { onDelete: 'cascade' }),
 	createdById: uuid('created_by_id').references(() => scrumSessionUser.id),
 	createdAt: timestamp('created_at').defaultNow().notNull(),
 	updatedAt: timestamp('updated_at').defaultNow().notNull()

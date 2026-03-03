@@ -8,11 +8,15 @@
     // TODO: add progressive enhancement to do something if no name
 </script>
 
-<form method="POST" class="flex flex-col gap-8 py-5 pb-8 px-4 max-w-lg bg-card border border-border rounded-md mt-6 h-fit">
+<svelte:head>
+	<title>Easy-Scrum</title>
+</svelte:head>
+
+<form method="POST" class="flex flex-col gap-8 py-5 pb-8 px-4 max-w-lg bg-card text-card-foreground border border-border rounded-md mt-6 h-fit">
     <div class="flex flex-col gap-2.5 text-center">
-        <h1 class="font-bold text-xl tracking-wide underline-offset-5 underline text-center">Welcome to Easy-Scrum!</h1>
-        <p class="text-sm"><span class="font-bold underline underline-offset-2">About</span>: Easy-Scrum is a free tool for creating free, online scrum boards.</p>
-        <p class="text-sm">Name your session, create it, and then share the link with others to track tasks, makes notes, and more!</p>
+        <h1 class="font-extrabold text-3xl tracking-wide underline-offset-5 underline text-center text-primary font-serif">Welcome to Easy-Scrum!</h1>
+        <p><span class="font-bold underline underline-offset-2">About</span>: Easy-Scrum is a free tool for creating free, online scrum boards.</p>
+        <p>Name your session, create it, and then share the link with others to track tasks, makes notes, and more!</p>
     </div>
 
     <div class="flex flex-col gap-2 mt-2">

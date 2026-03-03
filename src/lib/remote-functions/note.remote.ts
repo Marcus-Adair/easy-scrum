@@ -1,5 +1,5 @@
 import { command } from '$app/server';
-import { createNote, updateNote, deleteNote } from '$lib/server/api';
+import { createNote, updateNote, deleteNote, getNoteById } from '$lib/server/api';
 import z from 'zod';
 
 export const createNewNote = command(
@@ -27,8 +27,13 @@ export const updateNoteHeader = command(
     z.object({
       id: z.string(),
       header: z.string(),
+      userId: z.string(),
     }),
     async (input) => {
+      const note = await getNoteById(input.id);
+      if (!note || note.createdById !== input.userId) {
+        throw new Error('Unauthorized: You can only edit your own notes');
+      }
       await updateNote(input.id, { header: input.header });
     }
 );
@@ -37,8 +42,13 @@ export const updateNoteContent = command(
     z.object({
       id: z.string(),
       notes: z.string(),
+      userId: z.string(),
     }),
     async (input) => {
+      const note = await getNoteById(input.id);
+      if (!note || note.createdById !== input.userId) {
+        throw new Error('Unauthorized: You can only edit your own notes');
+      }
       await updateNote(input.id, { notes: input.notes });
     }
 );
@@ -47,8 +57,13 @@ export const updateNoteCategory = command(
     z.object({
       id: z.string(),
       noteCategoryId: z.string().nullable(),
+      userId: z.string(),
     }),
     async (input) => {
+      const note = await getNoteById(input.id);
+      if (!note || note.createdById !== input.userId) {
+        throw new Error('Unauthorized: You can only edit your own notes');
+      }
       await updateNote(input.id, { noteCategoryId: input.noteCategoryId });
     }
 );
@@ -56,8 +71,13 @@ export const updateNoteCategory = command(
 export const deleteNoteById = command(
     z.object({
       id: z.string(),
+      userId: z.string(),
     }),
     async (input) => {
+      const note = await getNoteById(input.id);
+      if (!note || note.createdById !== input.userId) {
+        throw new Error('Unauthorized: You can only delete your own notes');
+      }
       await deleteNote(input.id);
     }
 );

@@ -2,12 +2,13 @@ import { command } from '$app/server';
 import { updateTopic, createTopic, deleteTopic } from '$lib/server/api';
 import z from 'zod';
 
+const colorSchema = z.enum(['pink', 'yellow', 'blue', 'orange', 'salmon', 'red', 'green', 'white', 'purple']);
 
 export const createNewTopic = command(
   z.object({
     scrumSessionId: z.string(),
     topicName: z.string(),
-    color: z.string(),
+    color: colorSchema,
     rowIdx: z.number(),
   }),
   async (input) => {
@@ -35,7 +36,7 @@ export const updateTopicName = command(
 export const updateTopicColor = command(
     z.object({
       id: z.string(),
-      color: z.string(),
+      color: colorSchema,
     }),
     async (input) => {
       await updateTopic(input.id, { color: input.color });

@@ -25,18 +25,17 @@
     let { topic, allTopics, noteCategories, currentUser }: Props = $props();
     let topicsLength = $derived(allTopics.length);
 
+    // Shift constraints - can't shift past boundaries
+    let canShiftLeft = $derived(topic.rowIdx > 0);
+    let canShiftRight = $derived(topic.rowIdx < topicsLength - 1);
 
- 
     // svelte-ignore state_referenced_locally
     let editTopicColor = $state<ColorOption>(topic.color);
-    $inspect("edit topic color is:", editTopicColor)
     $effect(() => {
         editTopicColor = topic.color; 
     })
     let isEditColorOpen = $state(false);
 
-    
-    // 
     let newNoteTitle = $state<string | undefined>();
     let newNoteCategoryId = $state<string | undefined>();
     let newNote = $state<string | undefined>();
@@ -49,8 +48,6 @@
 
     })
 
-    //
-    // 
     let editTopicName = $state('');
     $effect(() => {
         editTopicName = topic.topicName; // Update on load
@@ -136,74 +133,79 @@
     let isHoveringTitle = $state(false);
     let showBannerButtons = $derived (isHoveringTitle || isEditNameOpen)
 
-    async function shiftTopicsLeft() {
-        // Circular shift left: each topic's index decreases by 1, first wraps to last
-        const updates = allTopics.map(t => ({
-            id: t.id,
-            rowIdx: (t.rowIdx - 1 + topicsLength) % topicsLength
-        }));
+    async function shiftTopicLeft() {
+        if (!canShiftLeft) return;
+        // Swap with the topic to the left (rowIdx - 1)
+        const topicLeft = allTopics.find(t => t.rowIdx === topic.rowIdx - 1);
+        if (!topicLeft) return;
+        const updates = [
+            { id: topic.id, rowIdx: topic.rowIdx - 1 },
+            { id: topicLeft.id, rowIdx: topic.rowIdx }
+        ];
         try {
             await shiftTopicRowIndices({ updates });
             invalidateAll();
         } catch (e) {
-            console.error("Failed to shift topics:", e);
-            toast.error("Failed to shift topics");
+            console.error("Failed to shift topic:", e);
+            toast.error("Failed to shift topic");
         }
     }
 
-    async function shiftTopicsRight() {
-        // Circular shift right: each topic's index increases by 1, last wraps to first
-        const updates = allTopics.map(t => ({
-            id: t.id,
-            rowIdx: (t.rowIdx + 1) % topicsLength
-        }));
+    async function shiftTopicRight() {
+        if (!canShiftRight) return;
+        // Swap with the topic to the right (rowIdx + 1)
+        const topicRight = allTopics.find(t => t.rowIdx === topic.rowIdx + 1);
+        if (!topicRight) return;
+        const updates = [
+            { id: topic.id, rowIdx: topic.rowIdx + 1 },
+            { id: topicRight.id, rowIdx: topic.rowIdx }
+        ];
         try {
             await shiftTopicRowIndices({ updates });
             invalidateAll();
         } catch (e) {
-            console.error("Failed to shift topics:", e);
-            toast.error("Failed to shift topics");
+            console.error("Failed to shift topic:", e);
+            toast.error("Failed to shift topic");
         }
     }
 </script>
 
-<div class={["flex flex-col rounded-md border-2 min-w-[360px] max-w-[360px] min-h-[250px] text-card-foreground overflow-hidden bg-card", colorBorderMap[topic.color]]}>
-    <div
-        class={["flex items-center justify-between px-1 py-1", colorBgMap[topic.color]]}
-        onmouseenter={() => isHoveringTitle = true}
-        onmouseleave={() => isHoveringTitle = false}
-        role="banner"
-    >
+<div class={["flex flex-col rounded-md border-2 min-w-[360px] max-w-[360px] min-h-[250px] text-card-foreground overflow-hidden bg-card shadow-xs", colorBorderMap[topic.color]]}>
+    <div class={["flex flex-col", colorBgMap[topic.color]]}>
+        <div
+            class="flex items-center justify-between px-1 py-1"
+            onmouseenter={() => isHoveringTitle = true}
+            onmouseleave={() => isHoveringTitle = false}
+            role="banner"
+        >
 
-        <!-- Move Left -->
-        {#if topicsLength > 1}
-            <Button size="icon-sm" variant="ghost" title="Shift Left" class={["transition-opacity duration-200", showBannerButtons ? "opacity-100" : "opacity-0"]} onclick={shiftTopicsLeft}>
-                <ChevronsLeft/>
-            </Button>
-        {:else}
-            <div class="w-7"></div>
-        {/if}
+            <!-- Move Left -->
+            {#if canShiftLeft}
+                <Button size="icon-sm" variant="ghost" title="Shift Left" class={["transition-opacity duration-200", showBannerButtons ? "opacity-100" : "opacity-0"]} onclick={shiftTopicLeft}>
+                    <ChevronsLeft/>
+                </Button>
+            {:else}
+                <div class="w-7"></div>
+            {/if}
 
-        <span class="text-lg font-bold text-center break-all px-1 max-w-[280px] text-pastel-foreground">
-            {topic.topicName}
-        </span>
+            <span class="text-lg font-bold text-center break-all px-1 max-w-[280px] text-pastel-foreground underline underline-offset-7">
+                {topic.topicName}
+            </span>
 
-        <!-- Move Right -->
-        {#if topicsLength > 1}
-            <Button size="icon-sm" variant="ghost" title="Shift Right" class={["transition-opacity duration-200", showBannerButtons ? "opacity-100" : "opacity-0"]} onclick={shiftTopicsRight}>
-                <ChevronsRight/>
-            </Button>
-        {:else}
-            <div class="w-7"></div>
-        {/if}
-    </div>
+            <!-- Move Right -->
+            {#if canShiftRight}
+                <Button size="icon-sm" variant="ghost" title="Shift Right" class={["transition-opacity duration-200", showBannerButtons ? "opacity-100" : "opacity-0"]} onclick={shiftTopicRight}>
+                    <ChevronsRight/>
+                </Button>
+            {:else}
+                <div class="w-7"></div>
+            {/if}
+        </div>
 
-    <div class={["h-[2px] w-full", colorBorderBgMap[topic.color]]}></div>
-
-    <div class="flex gap-1 mx-4 mt-2 justify-center">
+        <div class="flex gap-1 px-4 py-2 justify-center">
         <Dialog bind:open={isEditNameOpen}>
             <DialogTrigger
-                class={[buttonVariants({ variant: "secondary", size: "sm" })]}
+                class={[buttonVariants({ variant: "outline", size: "sm" })]}
                 title="Edit Name"
             >
                 Name<Pencil class="size-3.5"/>
@@ -232,7 +234,7 @@
 
         <Dialog bind:open={isEditColorOpen}>
             <DialogTrigger
-                class={[buttonVariants({ variant: "secondary", size: "sm" })]}
+                class={[buttonVariants({ variant: "outline", size: "sm" })]}
                 title="Edit Color"
             >
                 Color<Palette/>
@@ -255,14 +257,16 @@
 
         <AlertDialog bind:open={isDeleteTopicOpen}>
             <DialogTrigger
-                class={[buttonVariants({ variant: "secondary", size: "sm" })]}
-                title="Delete"
+                class={[buttonVariants({ variant: "outline", size: "sm" })]}
+                title="Delete Topic"
             >
                 Delete<Trash2 class="text-destructive"/>
             </DialogTrigger>
             <AlertDialogContent>
                 <AlertDialogTitle>Delete Topic?</AlertDialogTitle>
-                <span id="editTopicColor">Are you sure you want to delete this topic? This will delete all associated notes, comments, etc.</span>
+                <span id="editTopicColor">
+                    Are you sure you want to delete this topic? Note: you will not be able to delete this topic if there are notes posted to it.
+                </span>
 
                 <AlertDialogFooter>
                     <DialogClose class={buttonVariants({ variant: "outline" })}>
@@ -275,7 +279,7 @@
 
         <Dialog bind:open={isNewNoteOpen}>
             <DialogTrigger
-                class={[buttonVariants({ variant: "secondary", size: "sm" })]}
+                class={[buttonVariants({ variant: "outline", size: "sm" })]}
                 title="Post Note"
             >
                 Post<Plus/>
@@ -313,17 +317,23 @@
                 </DialogFooter>
             </DialogContent>
         </Dialog>
+        </div>
     </div>
 
-    <div class="flex flex-col gap-4 px-4 py-4.5">
+    <div class={["h-[2px] w-full", colorBorderBgMap[topic.color]]}></div>
+
+    <div class="cork-board flex flex-col gap-4 px-4 py-4.5 flex-1">
         {#if topic.notes.length}
             {#each topic.notes.sort((a, b) => a.colIdx - b.colIdx) as note}
                 <Note {note} allNotes={topic.notes} {allTopics} {noteCategories} {currentUser}/>
             {/each}
         {:else}
-            <div class="flex flex-col gap-1 px-4 mt-4">
+            <div class="flex flex-col gap-1 px-5 py-3 mt-4 bg-card/60 border rounded-md w-fit mx-auto">
                 <span class="text-center text-card-foreground">No Notes</span>
-                <span class="text-center text-sm text-muted-foreground">Post a Note</span>
+                
+                <Button variant="ghost" size="sm" onclick={() => isNewNoteOpen = true}>
+                    Post a Note<Plus/>
+                </Button>
             </div>
         {/if}
     </div>

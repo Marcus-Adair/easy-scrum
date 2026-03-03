@@ -2,11 +2,13 @@ import { command } from '$app/server';
 import { createNoteCategory, updateNoteCategory, deleteNoteCategory } from '$lib/server/api';
 import z from 'zod';
 
+const colorSchema = z.enum(['pink', 'yellow', 'blue', 'orange', 'salmon', 'red', 'green', 'white', 'purple']);
+
 export const createNewNoteCategory = command(
 	z.object({
 		scrumSessionId: z.string(),
 		categoryName: z.string(),
-		color: z.string(),
+		color: colorSchema,
 	}),
 	async (input) => {
 		await createNoteCategory({
@@ -30,7 +32,7 @@ export const updateNoteCategoryName = command(
 export const updateNoteCategoryColor = command(
 	z.object({
 		id: z.string(),
-		color: z.string(),
+		color: colorSchema,
 	}),
 	async (input) => {
 		await updateNoteCategory(input.id, { color: input.color });
