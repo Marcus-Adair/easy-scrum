@@ -1,13 +1,8 @@
-import { eq } from 'drizzle-orm';
 import { db } from '../db';
 import { scrumSession, noteCategory } from '../db/schema';
 
 export type CreateScrumSessionInput = {
 	name: string;
-};
-
-export type UpdateScrumSessionInput = {
-	name?: string;
 };
 
 export async function createScrumSession(input: CreateScrumSessionInput) {
@@ -50,19 +45,5 @@ export async function getScrumSessionById(id: string) {
 			}
 		}
 	});
-	return session ?? null;
-}
-
-export async function updateScrumSession(id: string, input: UpdateScrumSessionInput) {
-	const [session] = await db
-		.update(scrumSession)
-		.set({ ...input, updatedAt: new Date() })
-		.where(eq(scrumSession.id, id))
-		.returning();
-	return session ?? null;
-}
-
-export async function deleteScrumSession(id: string) {
-	const [session] = await db.delete(scrumSession).where(eq(scrumSession.id, id)).returning();
 	return session ?? null;
 }

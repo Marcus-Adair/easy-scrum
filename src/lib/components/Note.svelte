@@ -126,7 +126,7 @@
     });
     async function saveNoteCategory() {
         try {
-            await updateNoteCategory({ id: note.id, noteCategoryId: editNoteCategoryId ?? null, userId: currentUser!.id });
+            await updateNoteCategory({ id: note.id, noteCategoryId: editNoteCategoryId ?? null });
             isEditCategoryOpen = false;
             invalidateAll();
             toast.success("Category updated");
@@ -275,6 +275,24 @@
                     <span class="break-all">{note.header}</span>
                     <div class="flex justify-between gap-2 items-center">
                         <div class="flex flex-wrap gap-0.5">
+                            <Dialog bind:open={isEditCategoryOpen}>
+                                    <DialogTrigger
+                                        class={[buttonVariants({ variant: "ghost", size: "icon" })]}
+                                        title="Edit Note Category"
+                                    >
+                                        <StickyNote class="size-4"/>
+                                    </DialogTrigger>
+                                    <DialogContent noOverlay class="w-[450px]">
+                                        <DialogTitle>Edit Note Category</DialogTitle>
+                                        <NoteCategorySwitches {noteCategories} bind:noteCategoryId={editNoteCategoryId} dialogOpen={isEditCategoryOpen}/>
+                                        <DialogFooter>
+                                            <DialogClose class={buttonVariants({ variant: "ghost" })}>
+                                                Cancel
+                                            </DialogClose>
+                                            <Button onclick={saveNoteCategory}>Save</Button>
+                                        </DialogFooter>
+                                    </DialogContent>
+                                </Dialog>
                             {#if isNoteCreator}
                                 <Dialog bind:open={editHeaderDialogOpen}>
                                     <DialogTrigger
@@ -301,25 +319,6 @@
                                                 Cancel
                                             </DialogClose>
                                             <Button onclick={saveNoteHeader} disabled={!editNoteHeader}>Save</Button>
-                                        </DialogFooter>
-                                    </DialogContent>
-                                </Dialog>
-
-                                <Dialog bind:open={isEditCategoryOpen}>
-                                    <DialogTrigger
-                                        class={[buttonVariants({ variant: "ghost", size: "icon" })]}
-                                        title="Edit Note Category"
-                                    >
-                                        <StickyNote class="size-4"/>
-                                    </DialogTrigger>
-                                    <DialogContent noOverlay class="w-[450px]">
-                                        <DialogTitle>Edit Note Category</DialogTitle>
-                                        <NoteCategorySwitches {noteCategories} bind:noteCategoryId={editNoteCategoryId} dialogOpen={isEditCategoryOpen}/>
-                                        <DialogFooter>
-                                            <DialogClose class={buttonVariants({ variant: "ghost" })}>
-                                                Cancel
-                                            </DialogClose>
-                                            <Button onclick={saveNoteCategory}>Save</Button>
                                         </DialogFooter>
                                     </DialogContent>
                                 </Dialog>
@@ -445,10 +444,10 @@
                                     {#if currentUser?.id === comment.createdById}
                                         <div class="flex gap-0.5">
                                             <Button size="icon-sm" variant="ghost" title="Edit Comment" onclick={() => openEditComment(comment)}>
-                                                <Pencil class="size-3"/>
+                                                <Pencil class="size-3.5"/>
                                             </Button>
                                             <Button size="icon-sm" variant="ghost" title="Delete Comment" onclick={() => openDeleteComment(comment)}>
-                                                <Trash2 class="size-3 text-destructive"/>
+                                                <Trash2 class="size-3.5 text-destructive"/>
                                             </Button>
                                         </div>
                                     {/if}

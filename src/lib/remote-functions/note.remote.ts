@@ -1,5 +1,5 @@
 import { command } from '$app/server';
-import { createNote, updateNote, deleteNote, getNoteById } from '$lib/server/api';
+import { createNote, updateNote, deleteNote, getNoteById, moveNote } from '$lib/server/api';
 import z from 'zod';
 
 export const createNewNote = command(
@@ -57,13 +57,8 @@ export const updateNoteCategory = command(
     z.object({
       id: z.string(),
       noteCategoryId: z.string().nullable(),
-      userId: z.string(),
     }),
     async (input) => {
-      const note = await getNoteById(input.id);
-      if (!note || note.createdById !== input.userId) {
-        throw new Error('Unauthorized: You can only edit your own notes');
-      }
       await updateNote(input.id, { noteCategoryId: input.noteCategoryId });
     }
 );
@@ -103,6 +98,6 @@ export const moveNoteToTopic = command(
       colIdx: z.number(),
     }),
     async (input) => {
-      await updateNote(input.id, { topicId: input.topicId, colIdx: input.colIdx });
+      await moveNote(input.id, input.topicId, input.colIdx);
     }
 );
