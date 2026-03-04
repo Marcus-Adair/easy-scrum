@@ -23,13 +23,6 @@ export async function createNoteCategory(input: CreateNoteCategoryInput) {
 	return category;
 }
 
-export async function getNoteCategoryById(id: string) {
-	const category = await db.query.noteCategory.findFirst({
-		where: { id }
-	});
-	return category ?? null;
-}
-
 export async function updateNoteCategory(id: string, input: UpdateNoteCategoryInput) {
 	const [category] = await db
 		.update(noteCategory)

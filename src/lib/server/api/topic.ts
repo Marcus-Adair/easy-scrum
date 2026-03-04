@@ -25,21 +25,6 @@ export async function createTopic(input: CreateTopicInput) {
 	return newTopic;
 }
 
-export async function getTopicById(id: string) {
-	const t = await db.query.topic.findFirst({
-		where: { id },
-		with: {
-			notes: {
-				with: {
-					comments: true,
-					noteCategory: true
-				}
-			}
-		}
-	});
-	return t ?? null;
-}
-
 export async function updateTopic(id: string, input: UpdateTopicInput) {
 	const [t] = await db
 		.update(topic)
