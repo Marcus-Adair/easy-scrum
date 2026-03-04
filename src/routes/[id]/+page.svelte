@@ -261,13 +261,13 @@
     {/if}
 
     <!-- Scrum Board-->
-    <div class={["flex flex-col gap-2 border border-border rounded-md bg-card min-w-xl max-w-full overflow-x-scroll", !isSignedIn && "opacity-50 pointer-events-none select-none"]}>
+    <div class={["flex flex-col gap-2 border border-border rounded-md bg-card min-w-2xl max-w-full overflow-x-scroll", !isSignedIn && "opacity-50 pointer-events-none select-none"]}>
         <div class="sticky top-0 left-0 z-10">
             <div class="relative flex justify-center border-b border-border px-2 pt-3 pb-1.5">
                 <div class="flex flex-col items-center">
                 
                     <!-- SCRUM NAME!!!!! -->
-                    <h1 class="text-primary font-extrabold text-2xl font-serif">{scrumSession.name}</h1>
+                    <h1 class="text-primary font-extrabold text-2xl text-center font-serif max-w-72 wrap-break-word">{scrumSession.name}</h1>
 
                     <Button variant="ghost" size="sm" onclick={copyUrl} class="text-xs text-muted-foreground hover:text-muted-foreground hover:bg-accent/30! h-5.5 my-0.5">
                         {#if justCopied}
