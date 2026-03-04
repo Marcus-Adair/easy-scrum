@@ -52,6 +52,7 @@
 		"vite": "^7.3.1"
 	},
 	"dependencies": {
+		"@sveltejs/adapter-node": "^5.5.4",
 		"bcrypt": "^6.0.0",
 		"clsx": "^2.1.1",
 		"gsap": "^3.14.2",
