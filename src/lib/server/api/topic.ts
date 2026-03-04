@@ -1,17 +1,19 @@
 import { eq, count, gt, and, sql } from 'drizzle-orm';
 import { db } from '../db';
-import { topic, scrumSession, note } from '../db/schema';
+import { topic, scrumSession, note, colorsEnum } from '../db/schema';
+
+type Color = (typeof colorsEnum.enumValues)[number];
 
 export type CreateTopicInput = {
 	scrumSessionId: string;
 	topicName: string;
-	color: string;
+	color: Color;
 	rowIdx: number;
 };
 
 export type UpdateTopicInput = {
 	topicName?: string;
-	color?: string;
+	color?: Color;
 	rowIdx?: number;
 };
 

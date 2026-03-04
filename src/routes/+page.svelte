@@ -4,8 +4,6 @@
 	import Label from "$lib/components/ui/label/label.svelte";
 
     let newScrumName = $state<string | undefined>();
-
-    // TODO: add progressive enhancement to do something if no name
 </script>
 
 <svelte:head>

@@ -1,4 +1,5 @@
 import type { ColorOption } from "./types";
+
 export const colorOptions: ColorOption[] = [
     "pink",
     "yellow",
@@ -10,6 +11,7 @@ export const colorOptions: ColorOption[] = [
     "white",
     "purple"
 ];
+
 export const switchColorBgMap: Record<ColorOption, string> = {
     pink: "data-[state=checked]:bg-pink",
     yellow: "data-[state=checked]:bg-yellow",
@@ -21,7 +23,6 @@ export const switchColorBgMap: Record<ColorOption, string> = {
     white: "data-[state=checked]:bg-white",
     purple: "data-[state=checked]:bg-purple",
 }
-
 
 export const hoverColorBgMap: Record<ColorOption, string> = {
     pink: "data-highlighted:bg-pink data-[state=open]:bg-pink",
@@ -58,7 +59,6 @@ export const colorBorderMap: Record<ColorOption, string> = {
     white: "border-white-border",
     purple: "border-purple-border",
 }
-
 
 export const colorBorderBgMap: Record<ColorOption, string> = {
     pink: "bg-pink-border",

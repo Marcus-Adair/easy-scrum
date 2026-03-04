@@ -1,16 +1,18 @@
 import { eq } from 'drizzle-orm';
 import { db } from '../db';
-import { noteCategory, scrumSession } from '../db/schema';
+import { noteCategory, scrumSession, colorsEnum } from '../db/schema';
+
+type Color = (typeof colorsEnum.enumValues)[number];
 
 export type CreateNoteCategoryInput = {
 	scrumSessionId: string;
 	categoryName: string;
-	color: string;
+	color: Color;
 };
 
 export type UpdateNoteCategoryInput = {
 	categoryName?: string;
-	color?: string;
+	color?: Color;
 };
 
 async function touchSession(sessionId: string) {
